@@ -453,12 +453,11 @@ class material:
 LARGE_FONT= ("Verdana", 16)
 SMALL_FONT= ("Verdana", 10)
 
-stackDir			= 'TMstacks'# cell stacks predifined with layer names and thicknesses
-matDir			= 'matdata'	# materials data
-resDir        = 'results'
+stackDir			= os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),'TMstacks')# cell stacks predifined with layer names and thicknesses
+matDir			= os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),'matdata')	# materials data
+resDir        = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),'results')
 matPrefix		= 'nk_'		# materials data prefix
 matHeader		= 1				# number of lines in header
-
 
 
 #get list of stack names
@@ -507,7 +506,7 @@ with open('material_list.pickle', 'wb') as fichier:
 with open('material_list.pickle','rb') as fichier:
     material_list=pickle.load(fichier)
 
-AM1p5Gc=importAM2('AM1.5Gdf.csv')
+AM1p5Gc=importAM2(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),'spectratxtfiles','AM1.5Gdf.csv'))
 
 numberofLayer = 0
 
@@ -712,7 +711,7 @@ class TMSimApp(Toplevel):
         Check2Dvar.pack(side=tk.LEFT,expand=1)
         self.check2D.set(0)
         
-        image = PIL.Image.open("soleil.jpg")
+        image = PIL.Image.open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),'images',"soleil.jpg"))
         image=image.resize((50,50),PIL.Image.ANTIALIAS)
         sunpic=ImageTk.PhotoImage(image)
         sun_label = tk.Label(frame5, image=sunpic)

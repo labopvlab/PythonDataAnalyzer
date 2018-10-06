@@ -42,7 +42,7 @@ echarge = 1.60218e-19
 planck = 6.62607e-34
 lightspeed = 299792458
 
-file = open('AM15G.txt')
+file = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),'spectratxtfiles','AM15G.txt'))
 am15g = file.readlines()
 file.close()
 dataWave = []

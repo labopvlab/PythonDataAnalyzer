@@ -2,6 +2,9 @@
 
 from tkinter import Button, Tk, Label, Frame
 from PIL import ImageTk
+import os
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),'apps'))
 
 
 import PL_Pyth36_V1 as PL
@@ -37,8 +40,6 @@ def center(win):
     win.geometry('{}x{}+{}+{}'.format(width, height, x, y))
     win.deiconify()
 
-
-
 LARGE_FONT= ("Verdana", 12)
 
 class TheAnalyser(Frame):
@@ -47,7 +48,7 @@ class TheAnalyser(Frame):
         Frame.__init__(self, master)
         self.master=master
         self.master.resizable(False,False)       
-        self.master.iconbitmap('icon1.ico')
+        self.master.iconbitmap(os.path.join(os.path.dirname(os.path.abspath(__file__)),'images','icon1.ico'))
         
         self.master.title('MultiDataAnalyzer')
 
@@ -125,7 +126,7 @@ class TheAnalyser(Frame):
         
         
 root = Tk()
-background_image=ImageTk.PhotoImage(file="background2.png")
+background_image=ImageTk.PhotoImage(file=os.path.join(os.path.dirname(os.path.abspath(__file__)),'images','background2.png'))
 w = background_image.width()
 h = background_image.height()
 root.geometry("%dx%d+0+0" % (w, h))
