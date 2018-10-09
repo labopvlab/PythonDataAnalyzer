@@ -7,6 +7,5 @@ the repository contains a bunch of python applications to analyze JV, EQE, spect
 
 written in Python 3, tkinter
 
-pip installs to be done:
-(to be complited)
+for more info, please refer to the UserGuide
 
