@@ -106,7 +106,7 @@ class IVApp(Toplevel):
         Toplevel.__init__(self, *args, **kwargs)
         Toplevel.wm_title(self, "IVApp")
         Toplevel.config(self,background="white")
-        self.wm_geometry("1130x700")
+        self.wm_geometry("1050x700")
         self.wm_resizable(True,True)
         center(self)
         #self.iconbitmap('icon1.ico') #gives an error when calling self.__init__() : TclError: bitmap "icon1.ico" not defined
@@ -143,7 +143,7 @@ class IVApp(Toplevel):
         label.grid(row = 0, column = 0, rowspan = 2, columnspan = 100, sticky = "wens")
               
         self.Frame2 = Frame(self.superframe, bg="white")
-        self.Frame2.grid(row = 33, column = 0, rowspan = 15, columnspan = 100, sticky = "wens") 
+        self.Frame2.grid(row = 34, column = 0, rowspan = 15, columnspan = 100, sticky = "wens") 
 
         for r in range(15):
             self.Frame2.rowconfigure(r, weight=1)    
@@ -346,10 +346,10 @@ class IVApp(Toplevel):
         
         self.import_button = Button(self.frame0, text = "Import Data", command = self.importdata)
         self.import_button.grid(row = 0, column = 0,columnspan=1)
-        self.loadsession_button = Button(self.frame0, text = "Load session", command = self.LoadSession)
-        self.loadsession_button.grid(row = 0, column = 4, columnspan=1)
-        self.savesession_button = Button(self.frame0, text = "Save session", command = self.SaveSession)
-        self.savesession_button.grid(row = 0, column = 5, columnspan=1)
+#        self.loadsession_button = Button(self.frame0, text = "Load session", command = self.LoadSession)
+#        self.loadsession_button.grid(row = 0, column = 4, columnspan=1)
+#        self.savesession_button = Button(self.frame0, text = "Save session", command = self.SaveSession)
+#        self.savesession_button.grid(row = 0, column = 5, columnspan=1)
         self.ExportAll = Button(self.frame0, text="DB & AutoAnalysis", command = self.AskforRefcells)
         self.ExportAll.grid(row=0, column=6, columnspan=1,rowspan=1)
         self.Darktolight = Button(self.frame0, text="DtoL.",command = self.darktolightchange,fg='black')
@@ -4190,7 +4190,7 @@ class IVApp(Toplevel):
             for col in self.tableheaders:
                 self.tree.heading(col, text=col.title(), command=lambda c=col: self.sortby(self.tree, c, 0))
                 #self.tree.column(col,stretch=tkinter.YES)
-                self.tree.column(col, width=int(round(1*tkFont.Font().measure(col.title()))), anchor='n')   
+                self.tree.column(col, width=int(round(1.3*tkFont.Font().measure(col.title()))), anchor='n')   
                 #print(int(round(1.2*tkFont.Font().measure(col.title()))))
             
             self.deletetabelem = Button(self.parent, text = "Delete table elements", command = self.deletedatatreeview)
