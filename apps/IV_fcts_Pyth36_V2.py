@@ -4098,7 +4098,6 @@ class IVApp(Toplevel):
             else:
                 leglist.append(e)
         
-        
         for item in range(len(DATA)):
             DATA[item]["Jsc"]=float(DATA[item]["Jsc"])*float(DATA[item]["CellSurface"])/float(leglist[item]) 
             DATA[item]["Jmpp"]=float(DATA[item]["Jmpp"])*float(DATA[item]["CellSurface"])/float(leglist[item]) 
@@ -4113,10 +4112,10 @@ class IVApp(Toplevel):
 #        old file is renamed with _old
 #        new file has original name and saved at same place so that all links are still valid
         
-        for item in range(len(DATA)):
-            newarea=float(leglist[item])
-            oldcellarea=DATA[item]["CellSurface"]
-            file_path=DATA[item]["filepath"]
+        for item0 in range(len(DATA)):
+            newarea=float(leglist[item0])
+            oldcellarea=DATA[item0]["CellSurface"]
+            file_path=DATA[item0]["filepath"]
             
             filetoread = open(file_path,"r")
             filerawdata = filetoread.readlines()
@@ -4155,8 +4154,7 @@ class IVApp(Toplevel):
             file = open(file_path,'w')
             file.writelines("%s" % item for item in filerawdata)
             file.close()
-        
-            DATA[item]["CellSurface"]=leglist[item]
+            DATA[item0]["CellSurface"]=newarea
         
         self.window.destroy()
         self.updateTable()
