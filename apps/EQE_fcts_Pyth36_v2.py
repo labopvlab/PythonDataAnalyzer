@@ -26,11 +26,10 @@ import sqlite3
 """
 TODOLIST
 
-- calculation of jsc difference, from txt files
-
 - DB batch and samplename: might fail if user did not follow exactly the pattern. put some safety 
 when there are several tabs, numbers are added to the tab names => don't use that as batch and samplename
 
+- add option for integrated jsc curve on top of eqe
 
 
 """
@@ -208,6 +207,10 @@ class EQEApp(Toplevel):
         self.dropMenuFrame = OptionMenu(frame21314, self.YtypeChoice, *Ytype, command=self.choiceYtype)
         self.dropMenuFrame.pack(side=tk.LEFT,fill=tk.X,expand=1)
         
+        self.CheckIntegJsc = IntVar()
+        legendintegJsc=Checkbutton(frame21315,text='IntegrJsc',variable=self.CheckIntegJsc, 
+                           onvalue=1,offvalue=0,height=1, width=10, command = self.UpdateEQEGraph, bg="white")
+        legendintegJsc.pack(side=tk.LEFT)
         self.EQEDBbut = Button(frame21315, text="SaveToDB",
                             command = self.WriteEQEtoDatabase)
         self.EQEDBbut.pack(side=tk.RIGHT)
@@ -366,153 +369,286 @@ class EQEApp(Toplevel):
         print(len(file_path))
         
         for k in range(len(file_path)):
-#            samplename=os.path.basename(file_path[k].split('.')[0]).replace('-','_')  
-            samplename=file_path[k].replace('\\','/') 
-            samplename=samplename.split('/')[-1].replace('-','_').split('.')[0]
             
-            print(samplename)
-            batchnumb=samplename.split('_')[0]
-            samplenumb=samplename.split('_')[1]
-            
-            wb = xlrd.open_workbook(file_path[k])
-            sheet_names = wb.sheet_names()
-            print('Sample: %2f' % float(k+1))    
-            for j in range(len(sheet_names)):
-                if 'Sheet' not in sheet_names[j]:
-                    AllNames.append(sheet_names[j])
-                    print(sheet_names[j])
-                    xlsheet = wb.sheet_by_index(j)
-                    cell1 = xlsheet.cell(0,0).value
-                    rownb = cell1[cell1.index('(')+1:cell1.index('x')-1]
-                    columnnb = cell1[cell1.index('x')+2:cell1.index(')')]
-                    comment = xlsheet.cell(1,0).value
-                    datetime=modification_date(file_path[k])
-                    datadict = {'dateTime': datetime, 'filepath':file_path[k],'Name': sheet_names[j],'Jsc':[],'Eg':[],
-                                'EgTauc':[],'lnDat':[],'EgLn':[],'EuLn':[],'stderrEgLn':[],'NbColumn':columnnb, 
-                                'DATA': [],'tangent': [],'tangentLn': [], 'comment': comment, 'Vbias':[],'filterbias':[],'ledbias':[],
-                                'batchnumb': batchnumb, 'samplenumb': samplenumb}   
-                    for i in range(int(columnnb)):
-                        partdat = []
-                        for h in range(3,int(rownb)+3,1):
-                            partdat.append(xlsheet.cell(h,i).value)
-                        datadict['DATA'].append(partdat)
-
-#                    try:
-                    for i in range(1,int(columnnb),1):
-                        cell1 = xlsheet.cell(2,i).value
-                        datadict['Vbias'].append(cell1[cell1.index('=')+2:cell1.index(',')])
-                        datadict['filterbias'].append(cell1[cell1.index(',')+2:cell1.index('L')-2])
-                        datadict['ledbias'].append(cell1[cell1.index('#')+2:cell1.index('J')-2])
-#                            print(datadict['Vbias'])
-                        #jsc calculation
-                        x = datadict['DATA'][0]
-                        y = datadict['DATA'][i]
-                        if len(x)>3:
-                            spl = UnivariateSpline(x, y, s=0)
-                            f = interp1d(x, y, kind='cubic')
-                            x2 = lambda x: self.AM15GParticlesinnm(x)*f(x)
-                            integral = echarge/10*integrate.quad(x2,datadict['DATA'][0][0],datadict['DATA'][0][-1])[0]
-                            datadict['Jsc'].append(integral)
-                            #Eg calculation from linear normal curve
-                            splder = spl.derivative(n=1)
-                            splderlist = []
-                            newx=[]
-                            for item in x :
-                                if item >400:
-                                    splderlist.append(splder(item))
-                                    newx.append(item)
-                            minder=splderlist.index(min(splderlist))
-                            xhighslope = newx[minder]
-                            yhighslope = spl(newx[minder]).tolist()
-                            yprimehighslope = splder(newx[minder]).tolist()
-                            Eg= 1239.8/(xhighslope - yhighslope/yprimehighslope)
-                            datadict['Eg'].append(Eg)
-                            datadict['tangent'].append([yprimehighslope, yhighslope-yprimehighslope*xhighslope])#[pente,ordonnee a l'origine]
-
-                            #Eg calculation from ln(EQE) curve
-                            xE=[]
-                            yln=[]
-                            for xi in range(len(x)):
-                                if y[xi]>0:
-                                    xE.append(1239.8/x[xi])
-                                    yln.append(math.log(100*y[xi]))
-
-                            datadict['lnDat'].append([xE,yln])
-                            
-                            xErestricted=[]
-                            ylnrestricted=[]
-                            
-                            for xi in range(len(xE)-1,-1,-1):
-                                if yln[xi]<3 and yln[xi]>-2:
-                                    xErestricted.append(xE[xi])
-                                    ylnrestricted.append(yln[xi])
-                            xErestricted.append(999)
-                            ylnrestricted.append(999)
-                            xErestricted2=[]
-                            ylnrestricted2=[]
-                            for xi in range(len(xErestricted)-1):
-                                xErestricted2.append(xErestricted[xi])
-                                ylnrestricted2.append(ylnrestricted[xi])
-                                if abs(xErestricted[xi]-xErestricted[xi+1])>0.3:
-                                    break
-                            if len(xErestricted2)>1:
-                                slope, intercept, r_value, p_value, std_err = stats.linregress(xErestricted2,ylnrestricted2)
-                                                                
-                                datadict['EgLn'].append(-intercept/slope)
-                                datadict['EuLn'].append(1000/slope)#Eu calculation from ln(EQE) curve slope at band edge
-                                datadict['tangentLn'].append([slope, intercept,xErestricted2,ylnrestricted2])#[pente,ordonnee a l'origine]
-                                datadict['stderrEgLn'].append([std_err,len(xErestricted2)])
+            if os.path.splitext(file_path[k])[1]==".xls":
+    #            samplename=os.path.basename(file_path[k].split('.')[0]).replace('-','_')  
+                samplename=file_path[k].replace('\\','/') 
+                samplename=samplename.split('/')[-1].replace('-','_').split('.')[0]
+                
+                print(samplename)
+                batchnumb=samplename.split('_')[0]
+                samplenumb=samplename.split('_')[1]
+                
+                wb = xlrd.open_workbook(file_path[k])
+                sheet_names = wb.sheet_names()
+                print('Sample: %2f' % float(k+1))    
+                for j in range(len(sheet_names)):
+                    if 'Sheet' not in sheet_names[j]:
+                        AllNames.append(sheet_names[j])
+                        print(sheet_names[j])
+                        xlsheet = wb.sheet_by_index(j)
+                        cell1 = xlsheet.cell(0,0).value
+                        rownb = cell1[cell1.index('(')+1:cell1.index('x')-1]
+                        columnnb = cell1[cell1.index('x')+2:cell1.index(')')]
+                        comment = xlsheet.cell(1,0).value
+                        datetime=modification_date(file_path[k])
+                        datadict = {'dateTime': datetime, 'filepath':file_path[k],'Name': sheet_names[j],'Jsc':[],'Eg':[],
+                                    'EgTauc':[],'lnDat':[],'EgLn':[],'EuLn':[],'stderrEgLn':[],'NbColumn':columnnb, 
+                                    'DATA': [],'tangent': [],'tangentLn': [], 'comment': comment, 'Vbias':[],'filterbias':[],'ledbias':[],
+                                    'batchnumb': batchnumb, 'samplenumb': samplenumb}   
+                        for i in range(int(columnnb)):
+                            partdat = []
+                            for h in range(3,int(rownb)+3,1):
+                                partdat.append(xlsheet.cell(h,i).value)
+                            datadict['DATA'].append(partdat)
+    
+    #                    try:
+                        for i in range(1,int(columnnb),1):
+                            cell1 = xlsheet.cell(2,i).value
+                            datadict['Vbias'].append(cell1[cell1.index('=')+2:cell1.index(',')])
+                            datadict['filterbias'].append(cell1[cell1.index(',')+2:cell1.index('L')-2])
+                            datadict['ledbias'].append(cell1[cell1.index('#')+2:cell1.index('J')-2])
+    #                            print(datadict['Vbias'])
+                            #jsc calculation
+                            x = datadict['DATA'][0]
+                            y = datadict['DATA'][i]
+                            if len(x)>3:
+                                spl = UnivariateSpline(x, y, s=0)
+                                f = interp1d(x, y, kind='cubic')
+                                x2 = lambda x: self.AM15GParticlesinnm(x)*f(x)
+                                integral = echarge/10*integrate.quad(x2,datadict['DATA'][0][0],datadict['DATA'][0][-1])[0]
+                                datadict['Jsc'].append(integral)
+                                #Eg calculation from linear normal curve
+                                splder = spl.derivative(n=1)
+                                splderlist = []
+                                newx=[]
+                                for item in x :
+                                    if item >400:
+                                        splderlist.append(splder(item))
+                                        newx.append(item)
+                                minder=splderlist.index(min(splderlist))
+                                xhighslope = newx[minder]
+                                yhighslope = spl(newx[minder]).tolist()
+                                yprimehighslope = splder(newx[minder]).tolist()
+                                Eg= 1239.8/(xhighslope - yhighslope/yprimehighslope)
+                                datadict['Eg'].append(Eg)
+                                datadict['tangent'].append([yprimehighslope, yhighslope-yprimehighslope*xhighslope])#[pente,ordonnee a l'origine]
+    
+                                #Eg calculation from ln(EQE) curve
+                                xE=[]
+                                yln=[]
+                                for xi in range(len(x)):
+                                    if y[xi]>0:
+                                        xE.append(1239.8/x[xi])
+                                        yln.append(math.log(100*y[xi]))
+    
+                                datadict['lnDat'].append([xE,yln])
+                                
+                                xErestricted=[]
+                                ylnrestricted=[]
+                                
+                                for xi in range(len(xE)-1,-1,-1):
+                                    if yln[xi]<3 and yln[xi]>-2:
+                                        xErestricted.append(xE[xi])
+                                        ylnrestricted.append(yln[xi])
+                                xErestricted.append(999)
+                                ylnrestricted.append(999)
+                                xErestricted2=[]
+                                ylnrestricted2=[]
+                                for xi in range(len(xErestricted)-1):
+                                    xErestricted2.append(xErestricted[xi])
+                                    ylnrestricted2.append(ylnrestricted[xi])
+                                    if abs(xErestricted[xi]-xErestricted[xi+1])>0.3:
+                                        break
+                                if len(xErestricted2)>1:
+                                    slope, intercept, r_value, p_value, std_err = stats.linregress(xErestricted2,ylnrestricted2)
+                                                                    
+                                    datadict['EgLn'].append(-intercept/slope)
+                                    datadict['EuLn'].append(1000/slope)#Eu calculation from ln(EQE) curve slope at band edge
+                                    datadict['tangentLn'].append([slope, intercept,xErestricted2,ylnrestricted2])#[pente,ordonnee a l'origine]
+                                    datadict['stderrEgLn'].append([std_err,len(xErestricted2)])
+                                else:
+                                    print("EgLn not found enough points...")
+                                    datadict['EgLn'].append(999)
+                                    datadict['EuLn'].append(999)#Eu calculation from ln(EQE) curve slope at band edge
+                                    datadict['tangentLn'].append([999, 999,[999],[999]])#[pente,ordonnee a l'origine]
+                                    datadict['stderrEgLn'].append([999,999])
+                                
+                                #Tauc plots
+                                try:
+                                    xtauc=[1239.8/xm for xm in x]
+                                    ytauc=[((math.log(1-y[m]))**2)*(xtauc[m]**2) for m in range(len(y)) ]
+                                    xtauc=xtauc[::-1]
+                                    ytauc=ytauc[::-1]
+                                    spl = UnivariateSpline(xtauc, ytauc, s=0)
+                                    splder = spl.derivative(n=1)
+                                    splderlist = []
+                                    newx=[]
+                                    for item in xtauc :
+                                        if item <2:
+                                            splderlist.append(splder(item))
+                                            newx.append(item)
+                                    
+                                    maxder=splderlist.index(max(splderlist))
+                                    xhighslope = newx[maxder]
+                                    yhighslope = spl(newx[maxder]).tolist()
+                                    yprimehighslope = splder(newx[maxder]).tolist()
+                                    Eg= (xhighslope - yhighslope/yprimehighslope)
+                                    
+                                    m=yprimehighslope
+                                    h=yhighslope-yprimehighslope*xhighslope
+                                    x2=Eg
+                                    x=np.linspace(x2,x2+0.1,10)
+                                    y=eval('m*x+h')
+                                    datadict['EgTauc'].append([Eg,xtauc,ytauc,m,h])
+                                except:
+                                    datadict['EgTauc'].append([999,[],[],999,999])
+                                                            
                             else:
-                                print("EgLn not found enough points...")
+                                datadict['EgTauc'].append([999,[],[],999,999])
+                                datadict['Jsc'].append(999)
+                                datadict['Eg'].append(999)
+                                datadict['tangent'].append([999, 999])#[pente,ordonnee a l'origine]
                                 datadict['EgLn'].append(999)
                                 datadict['EuLn'].append(999)#Eu calculation from ln(EQE) curve slope at band edge
                                 datadict['tangentLn'].append([999, 999,[999],[999]])#[pente,ordonnee a l'origine]
                                 datadict['stderrEgLn'].append([999,999])
-                            
-                            #Tauc plots
-                            try:
-                                xtauc=[1239.8/xm for xm in x]
-                                ytauc=[((math.log(1-y[m]))**2)*(xtauc[m]**2) for m in range(len(y)) ]
-                                xtauc=xtauc[::-1]
-                                ytauc=ytauc[::-1]
-                                spl = UnivariateSpline(xtauc, ytauc, s=0)
-                                splder = spl.derivative(n=1)
-                                splderlist = []
-                                newx=[]
-                                for item in xtauc :
-                                    if item <2:
-                                        splderlist.append(splder(item))
-                                        newx.append(item)
-                                
-                                maxder=splderlist.index(max(splderlist))
-                                xhighslope = newx[maxder]
-                                yhighslope = spl(newx[maxder]).tolist()
-                                yprimehighslope = splder(newx[maxder]).tolist()
-                                Eg= (xhighslope - yhighslope/yprimehighslope)
-                                
-                                m=yprimehighslope
-                                h=yhighslope-yprimehighslope*xhighslope
-                                x2=Eg
-                                x=np.linspace(x2,x2+0.1,10)
-                                y=eval('m*x+h')
-                                datadict['EgTauc'].append([Eg,xtauc,ytauc,m,h])
-                            except:
-                                datadict['EgTauc'].append([999,[],[],999,999])
-                                                        
-                        else:
-                            datadict['EgTauc'].append([999,[],[],999,999])
-                            datadict['Jsc'].append(999)
-                            datadict['Eg'].append(999)
-                            datadict['tangent'].append([999, 999])#[pente,ordonnee a l'origine]
-                            datadict['EgLn'].append(999)
-                            datadict['EuLn'].append(999)#Eu calculation from ln(EQE) curve slope at band edge
-                            datadict['tangentLn'].append([999, 999,[999],[999]])#[pente,ordonnee a l'origine]
-                            datadict['stderrEgLn'].append([999,999])
-                            datadict['lnDat'].append([[999],[999]])
+                                datadict['lnDat'].append([[999],[999]])
+        
+    #                    except:
+    #                        print("some error with m>k in Spline...")
+                        DATA.append(datadict)
+            elif os.path.splitext(file_path[k])[1]==".txt":
+                samplename=file_path[k].replace('\\','/') 
+                samplename=samplename.split('/')[-1].replace('-','_').split('.')[0]
+                print(samplename)
+                batchnumb=samplename.split('_')[0]
+                samplenumb=samplename.split('_')[1]
+                
+                file = open(file_path[k])
+                filedat = file.readlines()
+                file.close()
+                datetime=modification_date(file_path[k])
+                datadict = {'dateTime': datetime, 'filepath':file_path[k],'Name': samplename,'Jsc':[],'Eg':[],
+                                    'EgTauc':[],'lnDat':[],'EgLn':[],'EuLn':[],'stderrEgLn':[],'NbColumn':999, 
+                                    'DATA': [],'tangent': [],'tangentLn': [], 'comment': "", 'Vbias':[],'filterbias':[],'ledbias':[],
+                                    'batchnumb': batchnumb, 'samplenumb': samplenumb}   
+
+
+                datadict['DATA']=[[],[]]
+                for item in filedat:
+                    datadict['DATA'][0].append(float(item.split('\t')[0]))
+                    datadict['DATA'][1].append(float(item.split('\t')[1]))
+                
+                m=list(zip(*sorted(zip(datadict['DATA'][0],datadict['DATA'][1]), key=lambda pair: pair[0])))
+                
+                datadict['DATA'][0]=list(m[0])
+                datadict['DATA'][1]=list(m[1])
+                x=datadict['DATA'][0]
+                y=datadict['DATA'][1]
+                print(x)
+                spl = UnivariateSpline(x, y, s=0)
+                f = interp1d(x, y, kind='cubic')
+                x2 = lambda x: self.AM15GParticlesinnm(x)*f(x)
+                integral = echarge/10*integrate.quad(x2,datadict['DATA'][0][0],datadict['DATA'][0][-1])[0]
+                datadict['Jsc'].append(integral)
+                #Eg calculation from linear normal curve
+                splder = spl.derivative(n=1)
+                splderlist = []
+                newx=[]
+                for item in x :
+                    if item >400:
+                        splderlist.append(splder(item))
+                        newx.append(item)
+                minder=splderlist.index(min(splderlist))
+                xhighslope = newx[minder]
+                yhighslope = spl(newx[minder]).tolist()
+                yprimehighslope = splder(newx[minder]).tolist()
+                Eg= 1239.8/(xhighslope - yhighslope/yprimehighslope)
+                datadict['Eg'].append(Eg)
+                datadict['tangent'].append([yprimehighslope, yhighslope-yprimehighslope*xhighslope])#[pente,ordonnee a l'origine]
     
-#                    except:
-#                        print("some error with m>k in Spline...")
-                    DATA.append(datadict)
+                #Eg calculation from ln(EQE) curve
+                xE=[]
+                yln=[]
+                for xi in range(len(x)):
+                    if y[xi]>0:
+                        xE.append(1239.8/x[xi])
+                        yln.append(math.log(100*y[xi]))
+
+                datadict['lnDat'].append([xE,yln])
+                
+                xErestricted=[]
+                ylnrestricted=[]
+                
+                for xi in range(len(xE)-1,-1,-1):
+                    if yln[xi]<3 and yln[xi]>-2:
+                        xErestricted.append(xE[xi])
+                        ylnrestricted.append(yln[xi])
+                xErestricted.append(999)
+                ylnrestricted.append(999)
+                xErestricted2=[]
+                ylnrestricted2=[]
+                for xi in range(len(xErestricted)-1):
+                    xErestricted2.append(xErestricted[xi])
+                    ylnrestricted2.append(ylnrestricted[xi])
+                    if abs(xErestricted[xi]-xErestricted[xi+1])>0.3:
+                        break
+                if len(xErestricted2)>1:
+                    slope, intercept, r_value, p_value, std_err = stats.linregress(xErestricted2,ylnrestricted2)
+                                                    
+                    datadict['EgLn'].append(-intercept/slope)
+                    datadict['EuLn'].append(1000/slope)#Eu calculation from ln(EQE) curve slope at band edge
+                    datadict['tangentLn'].append([slope, intercept,xErestricted2,ylnrestricted2])#[pente,ordonnee a l'origine]
+                    datadict['stderrEgLn'].append([std_err,len(xErestricted2)])
+                else:
+                    print("EgLn not found enough points...")
+                    datadict['EgLn'].append(999)
+                    datadict['EuLn'].append(999)#Eu calculation from ln(EQE) curve slope at band edge
+                    datadict['tangentLn'].append([999, 999,[999],[999]])#[pente,ordonnee a l'origine]
+                    datadict['stderrEgLn'].append([999,999])
+                
+                #Tauc plots
+                try:
+                    xtauc=[1239.8/xm for xm in x]
+                    ytauc=[((math.log(1-y[m]))**2)*(xtauc[m]**2) for m in range(len(y)) ]
+                    xtauc=xtauc[::-1]
+                    ytauc=ytauc[::-1]
+                    spl = UnivariateSpline(xtauc, ytauc, s=0)
+                    splder = spl.derivative(n=1)
+                    splderlist = []
+                    newx=[]
+                    for item in xtauc :
+                        if item <2:
+                            splderlist.append(splder(item))
+                            newx.append(item)
+                    
+                    maxder=splderlist.index(max(splderlist))
+                    xhighslope = newx[maxder]
+                    yhighslope = spl(newx[maxder]).tolist()
+                    yprimehighslope = splder(newx[maxder]).tolist()
+                    Eg= (xhighslope - yhighslope/yprimehighslope)
+                    
+                    m=yprimehighslope
+                    h=yhighslope-yprimehighslope*xhighslope
+                    x2=Eg
+                    x=np.linspace(x2,x2+0.1,10)
+                    y=eval('m*x+h')
+                    datadict['EgTauc'].append([Eg,xtauc,ytauc,m,h])
+                except:
+                    datadict['EgTauc'].append([999,[],[],999,999])
+                                    
+                
+#                datadict['EgTauc'].append([999,[],[],999,999])
+#                datadict['Jsc'].append(999)
+#                datadict['Eg'].append(999)
+#                datadict['tangent'].append([999, 999])#[pente,ordonnee a l'origine]
+#                datadict['EgLn'].append(999)
+#                datadict['EuLn'].append(999)#Eu calculation from ln(EQE) curve slope at band edge
+#                datadict['tangentLn'].append([999, 999,[999],[999]])#[pente,ordonnee a l'origine]
+#                datadict['stderrEgLn'].append([999,999])
+#                datadict['lnDat'].append([[999],[999]])
+                DATA.append(datadict)
 
         print(len(DATA))
         self.DATA=DATA
@@ -1307,7 +1443,7 @@ class EQEApp(Toplevel):
             integral = echarge/10*integrate.quad(x2,self.x0.get(),self.x1.get())[0]
             self.calculatedJ.set('%.2f' % integral)
         except ValueError:
-            print("a limit value is outside of interpolation range")
+            messagebox.showinfo("", "a limit value is outside of interpolation range,\nmin: "+str(x[0])+", max: "+str(x[-1]))
     
     def SelectData(self):
         global DATAFORGRAPH

@@ -16,12 +16,14 @@ still to be added:
     - E field in device
     - modifiable IQE
 
-- add visualization tool in the app for the nk data
 - change dropdown selection of material to a popup window with a listbox and scrollable
 - 
 
-"""
+- replace dropdown menu list for load cellstack by selectfile window, so that we can load a new stack from another folder
+- close figure before shutting down app
 
+"""
+#%%
 import os
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 import matplotlib.pyplot as plt
@@ -41,7 +43,7 @@ import pickle
 admittance0=2.6544E-3
 
 
-
+#%%
 def eta(index,imaginary_angle,TEorTM):
     res=index*np.cos(imaginary_angle)
     if(TEorTM==0):
@@ -448,7 +450,7 @@ class material:
     def indexatWL(self,wavelength):
         return np.interp(wavelength,self.indextable[0],[x.real for x in self.indextable[1]])+1j*np.interp(wavelength,self.indextable[0],[x.imag for x in self.indextable[1]])
 
-
+#%%
 
 LARGE_FONT= ("Verdana", 16)
 SMALL_FONT= ("Verdana", 10)
