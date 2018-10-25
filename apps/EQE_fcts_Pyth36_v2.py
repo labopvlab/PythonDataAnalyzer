@@ -29,9 +29,6 @@ TODOLIST
 - DB batch and samplename: might fail if user did not follow exactly the pattern. put some safety 
 when there are several tabs, numbers are added to the tab names => don't use that as batch and samplename
 
-- add option for integrated jsc curve on top of eqe
-
-
 """
 #%%
 
@@ -112,6 +109,7 @@ class EQEApp(Toplevel):
         canvas = FigureCanvasTkAgg(self.fig1, frame1)
         canvas.get_tk_widget().pack(fill=tk.BOTH,expand=1)
         self.EQEgraph = plt.subplot2grid((1, 5), (0, 0), colspan=3)
+        self.EQEgraphY2 = self.EQEgraph.twinx()
         self.toolbar = NavigationToolbar2TkAgg(canvas, frame1)
         self.toolbar.update()
         canvas._tkcanvas.pack(fill = BOTH, expand = 1) 
@@ -192,10 +190,14 @@ class EQEApp(Toplevel):
         legendEg=Checkbutton(frame21313,text='Eg',variable=self.CheckLegEg, 
                            onvalue=1,offvalue=0,height=1, width=10, command = self.UpdateEQEGraph, bg="white")
         legendEg.pack(side=tk.LEFT,fill=tk.X,expand=1)
-        self.CheckAutoscale = IntVar()
-        Autoscale=Checkbutton(frame21314,text='autoscale',variable=self.CheckAutoscale, 
+#        self.CheckAutoscale = IntVar()
+#        Autoscale=Checkbutton(frame21314,text='autoscale',variable=self.CheckAutoscale, 
+#                           onvalue=1,offvalue=0,height=1, width=10, command = self.UpdateEQEGraph, bg="white")
+#        Autoscale.pack(side=tk.LEFT,fill=tk.X,expand=1)
+        self.CheckIntegJsc = IntVar()
+        legendintegJsc=Checkbutton(frame21314,text='IntegrJsc',variable=self.CheckIntegJsc, 
                            onvalue=1,offvalue=0,height=1, width=10, command = self.UpdateEQEGraph, bg="white")
-        Autoscale.pack(side=tk.LEFT,fill=tk.X,expand=1)
+        legendintegJsc.pack(side=tk.LEFT,fill=tk.X,expand=1)
         self.CheckTangent = IntVar()
         legend=Checkbutton(frame21314,text='showSecretEg',variable=self.CheckTangent, 
                            onvalue=1,offvalue=0,height=1, width=10, command = self.UpdateEQEGraph, bg="white")
@@ -207,10 +209,7 @@ class EQEApp(Toplevel):
         self.dropMenuFrame = OptionMenu(frame21314, self.YtypeChoice, *Ytype, command=self.choiceYtype)
         self.dropMenuFrame.pack(side=tk.LEFT,fill=tk.X,expand=1)
         
-        self.CheckIntegJsc = IntVar()
-        legendintegJsc=Checkbutton(frame21315,text='IntegrJsc',variable=self.CheckIntegJsc, 
-                           onvalue=1,offvalue=0,height=1, width=10, command = self.UpdateEQEGraph, bg="white")
-        legendintegJsc.pack(side=tk.LEFT)
+        
         self.EQEDBbut = Button(frame21315, text="SaveToDB",
                             command = self.WriteEQEtoDatabase)
         self.EQEDBbut.pack(side=tk.RIGHT)
@@ -336,11 +335,17 @@ class EQEApp(Toplevel):
             twocolumneqe[0].append('EQE')
             twocolumneqe[1].append('-')
         return twocolumneqe
+    def ncolumneqeJsc(self, n):
+        twocolumneqe = [['Wavelength','Current density'],['nm','mA/cm2']]
+        for i in range(1,n-1):
+            twocolumneqe[0].append('Current density')
+            twocolumneqe[1].append('mA/cm2')
+        return twocolumneqe
     
     def AM15GParticlesinnm(self, x):
         return (x*10**(-9))*SpectIntensFct(x)/(planck*lightspeed)
     
-#%%###########        
+    #%%###########        
     def GetEQEDATA(self):
         global DATAFORGRAPH
         global colorstylelist
@@ -351,8 +356,12 @@ class EQEApp(Toplevel):
 #        
 #        print(os.path.basename(file_path[0].split('.')[0]))
 #        print("")
+        integrationJscYes=0
+        MsgBox = messagebox.askquestion("IngegJsc?", "Do you want to calculate the Integrated Jsc curve?\nWarning: it will slow a bit down the importation")
+        if MsgBox == 'yes':
+            integrationJscYes=1
         
-        
+            
         directory = str(Path(file_path[0]).parent.parent)+'\\resultFilesEQE'
         
 #        print(directory)
@@ -401,7 +410,10 @@ class EQEApp(Toplevel):
                             for h in range(3,int(rownb)+3,1):
                                 partdat.append(xlsheet.cell(h,i).value)
                             datadict['DATA'].append(partdat)
-    
+                        if integrationJscYes:
+                            datadict['integJsclist']=[datadict['DATA'][0]]
+                        else:
+                            datadict['integJsclist']=[[]]
     #                    try:
                         for i in range(1,int(columnnb),1):
                             cell1 = xlsheet.cell(2,i).value
@@ -415,9 +427,16 @@ class EQEApp(Toplevel):
                             if len(x)>3:
                                 spl = UnivariateSpline(x, y, s=0)
                                 f = interp1d(x, y, kind='cubic')
-                                x2 = lambda x: self.AM15GParticlesinnm(x)*f(x)
+                                x2 = lambda x0: self.AM15GParticlesinnm(x0)*f(x0)
                                 integral = echarge/10*integrate.quad(x2,datadict['DATA'][0][0],datadict['DATA'][0][-1])[0]
                                 datadict['Jsc'].append(integral)
+                                print(datadict['Jsc'][-1])
+                                integlist=[]
+                                if integrationJscYes:
+                                    for item in x:
+                                        integral = echarge/10*integrate.quad(x2,datadict['DATA'][0][0],item)[0]
+                                        integlist.append(integral)
+                                datadict['integJsclist'].append(integlist)
                                 #Eg calculation from linear normal curve
                                 splder = spl.derivative(n=1)
                                 splderlist = []
@@ -534,7 +553,7 @@ class EQEApp(Toplevel):
                                     'DATA': [],'tangent': [],'tangentLn': [], 'comment': "", 'Vbias':[],'filterbias':[],'ledbias':[],
                                     'batchnumb': batchnumb, 'samplenumb': samplenumb}   
 
-
+                
                 datadict['DATA']=[[],[]]
                 for item in filedat:
                     datadict['DATA'][0].append(float(item.split('\t')[0]))
@@ -549,9 +568,20 @@ class EQEApp(Toplevel):
                 print(x)
                 spl = UnivariateSpline(x, y, s=0)
                 f = interp1d(x, y, kind='cubic')
-                x2 = lambda x: self.AM15GParticlesinnm(x)*f(x)
+                x2 = lambda x0: self.AM15GParticlesinnm(x0)*f(x0)
                 integral = echarge/10*integrate.quad(x2,datadict['DATA'][0][0],datadict['DATA'][0][-1])[0]
                 datadict['Jsc'].append(integral)
+                if integrationJscYes:
+                    datadict['integJsclist']=[datadict['DATA'][0]]
+                else:
+                    datadict['integJsclist']=[[]]
+                integlist=[]
+                if integrationJscYes:
+                    for item in x:
+                        integral = echarge/10*integrate.quad(x2,datadict['DATA'][0][0],item)[0]
+                        integlist.append(integral)
+                datadict['integJsclist'].append(integlist)
+                              
                 #Eg calculation from linear normal curve
                 splder = spl.derivative(n=1)
                 splderlist = []
@@ -653,7 +683,7 @@ class EQEApp(Toplevel):
         print(len(DATA))
         self.DATA=DATA
         DATAforgraph=[] # [0 samplenameshort, 1 jsc, 2 dataWave, 3 dataInt, 4 Eg, 5 NameMod, 6 Name_Jsc, 7 Name_Eg, 8 Name_Jsc_Eg, 9 linestyle, 10 linecolor, 11 slope, 12 h, 13 slopeLn, 14 hln, 
-                            #15 dataEnergyLn, 16 dataIntLn, 17 ptstgtLnX, 18 ptstgtLnY, 19 EgTauc, 20 xtauc, 21 ytauc, 22 mtauc, 23 htauc, 24 Name_Egln, 25 Name_Jsc_Egln, 26 Name_Egtauc, 27 Name_Jsc_Egtauc ]
+                            #15 dataEnergyLn, 16 dataIntLn, 17 ptstgtLnX, 18 ptstgtLnY, 19 EgTauc, 20 xtauc, 21 ytauc, 22 mtauc, 23 htauc, 24 Name_Egln, 25 Name_Jsc_Egln, 26 Name_Egtauc, 27 Name_Jsc_Egtauc, 28 integJsclist ]
         for i in range(len(DATA)):
             for j in range(len(DATA[i]['Jsc'])):
                 DATAforgraph.append([DATA[i]['Name']+'_'+str(j),DATA[i]['Jsc'][j],DATA[i]['DATA'][0],DATA[i]['DATA'][j+1],
@@ -662,7 +692,8 @@ class EQEApp(Toplevel):
                                      '-',colorstylelist[i],DATA[i]['tangent'][j][0],DATA[i]['tangent'][j][1],DATA[i]['tangentLn'][j][0],DATA[i]['tangentLn'][j][1],DATA[i]['lnDat'][j][0],DATA[i]['lnDat'][j][1],
                                      DATA[i]['tangentLn'][j][2],DATA[i]['tangentLn'][j][3],DATA[i]['EgTauc'][j][0],DATA[i]['EgTauc'][j][1],DATA[i]['EgTauc'][j][2],DATA[i]['EgTauc'][j][3],DATA[i]['EgTauc'][j][4],
                                      DATA[i]['Name']+'_'+str(j)+'_'+'Eg: %.2f' % DATA[i]['EgLn'][j],DATA[i]['Name']+'_'+str(j)+'_'+'Jsc: %.2f' % DATA[i]['Jsc'][j]+'_'+'Eg: %.2f' % DATA[i]['EgLn'][j],
-                                     DATA[i]['Name']+'_'+str(j)+'_'+'Eg: %.2f' % DATA[i]['EgTauc'][j][0],DATA[i]['Name']+'_'+str(j)+'_'+'Jsc: %.2f' % DATA[i]['Jsc'][j]+'_'+'Eg: %.2f' % DATA[i]['EgTauc'][j][0]
+                                     DATA[i]['Name']+'_'+str(j)+'_'+'Eg: %.2f' % DATA[i]['EgTauc'][j][0],DATA[i]['Name']+'_'+str(j)+'_'+'Jsc: %.2f' % DATA[i]['Jsc'][j]+'_'+'Eg: %.2f' % DATA[i]['EgTauc'][j][0],
+                                     DATA[i]['integJsclist'][j+1]
                                      ])
         DATAFORGRAPH = DATAforgraph
         print("It's done")
@@ -759,6 +790,29 @@ class EQEApp(Toplevel):
             file.writelines("%s" % item for item in content1)
             file.close()
         
+        #creating text files with eqe integrated total Jsc
+        for i in range(len(DATA)):
+            if DATA[i]['integJsclist'][0]!=[]:
+                listeqe=self.ncolumneqeJsc(int(DATA[i]['NbColumn']))
+                listeqe += np.asarray(DATA[i]['integJsclist']).T.tolist()
+                content1=[]
+                for j in range(len(listeqe)):
+                    strr=''
+                    for k in range(len(listeqe[j])):
+                        strr = strr + str(listeqe[j][k])+'\t'
+                    strr = strr[:-1]+'\n'
+                    content1.append(strr)
+                
+                namerow =DATA[i]['Name']+'\t'
+                for k in range(len(DATA[i]['Jsc'])):
+                    namerow +='J = '+'%.2f' % DATA[i]['Jsc'][k]+' mA/cm2\t'
+                namerow=namerow[:-1]+'\n'   
+                content1.insert(2,namerow)    
+                    
+                file = open(DATA[i]['Name'] + '_integJsc.txt','w')
+                file.writelines("%s" % item for item in content1)
+                file.close()
+            
         #creating graphs
         plt.clf()
         for i in range(len(DATA)):
@@ -779,6 +833,23 @@ class EQEApp(Toplevel):
                                                 horizontalalignment='left', verticalalignment='bottom')
             plt.savefig(DATA[i]['Name']+'.png')
             plt.clf()
+        
+        #creating graphs for integJsc
+        if DATA[0]['integJsclist'][0]!=[]:
+            plt.clf()
+            maxyvalues=[]
+            for i in range(len(DATA)):
+                for k in range(1,int(DATA[i]['NbColumn']),1):
+                    x=DATA[i]['integJsclist'][0]
+                    plt.plot(x,DATA[i]['integJsclist'][k],label=DATA[i]['Name']+'_'+'%.2f'% DATA[i]['Jsc'][k-1])
+                    maxyvalues.append(DATA[i]['integJsclist'][k][-1])
+            plt.legend()
+            plt.axis([x[0],x[-1],0,math.ceil(max(maxyvalues))])
+            plt.xlabel('Wavelength (nm)')
+            plt.ylabel('Integrated Jsc (mA/cm2)')
+            plt.savefig('integJsc.png')
+            plt.clf()
+        
         
         plt.close()
         self.destroy()
@@ -897,58 +968,134 @@ class EQEApp(Toplevel):
             #print(sampletotake)
         
         if self.YtypeChoice.get()=="linear":
-            self.EQEgraph.clear()
-            EQEfig=self.EQEgraph
-            for i in range(len(sampletotake)):
-                x = DATAx[sampletotake[i]][2]
-                y = DATAx[sampletotake[i]][3]
-                
-                colx=["Wavelength","nm"," "]+x
-                coly=["EQE","-",DATAx[sampletotake[i]][5]]+y
-                DATAforexport.append(colx)
-                DATAforexport.append(coly)
-                
+            if self.CheckIntegJsc.get()==0:
+                self.EQEgraph.clear()
+                self.EQEgraphY2.clear()
+                self.EQEgraphY2.get_yaxis().set_visible(False)
+                EQEfig=self.EQEgraph
+                for i in range(len(sampletotake)):
+                    x = DATAx[sampletotake[i]][2]
+                    y = DATAx[sampletotake[i]][3]
+                    
+                    colx=["Wavelength","nm"," "]+x
+                    coly=["EQE","-",DATAx[sampletotake[i]][5]]+y
+                    DATAforexport.append(colx)
+                    DATAforexport.append(coly)
+                    
+                    if self.CheckLegend.get()==1:
+                        if self.CheckLegJsc.get()==0 and self.CheckLegEg.get()==0:
+                            EQEfig.plot(x,y,label=DATAx[sampletotake[i]][5],linestyle=DATAx[sampletotake[i]][9],color=DATAx[sampletotake[i]][10])
+                        elif self.CheckLegJsc.get()==1 and self.CheckLegEg.get()==0:
+                            EQEfig.plot(x,y,label=DATAx[sampletotake[i]][6],linestyle=DATAx[sampletotake[i]][9],color=DATAx[sampletotake[i]][10])
+                        elif self.CheckLegJsc.get()==0 and self.CheckLegEg.get()==1:
+                            EQEfig.plot(x,y,label=DATAx[sampletotake[i]][7],linestyle=DATAx[sampletotake[i]][9],color=DATAx[sampletotake[i]][10])
+                        elif self.CheckLegJsc.get()==1 and self.CheckLegEg.get()==1:
+                            EQEfig.plot(x,y,label=DATAx[sampletotake[i]][8],linestyle=DATAx[sampletotake[i]][9],color=DATAx[sampletotake[i]][10])
+                    else:
+                        EQEfig.plot(x,y,linestyle=DATAx[sampletotake[i]][9],color=DATAx[sampletotake[i]][10])
+                    
+                    if self.CheckTangent.get()==1:
+                        m=DATAx[sampletotake[i]][11]
+                        h=DATAx[sampletotake[i]][12]
+                        x2=1239.8/DATAx[sampletotake[i]][4]
+                        x=np.linspace(x2-100,x2,10)
+                        #x=np.array(range(int(round(x2-100)),int(round(x2))))
+                        y=eval('m*x+h')
+                        EQEfig.plot(x,y)
+                            
+                self.EQEgraph.set_ylabel('EQE (-)', fontsize=14)
+                self.EQEgraph.set_xlabel('Wavelength (nm)', fontsize=14)
+                if titEQE:
+                    self.EQEgraph.set_title(self.titleEQE.get())
                 if self.CheckLegend.get()==1:
-                    if self.CheckLegJsc.get()==0 and self.CheckLegEg.get()==0:
-                        EQEfig.plot(x,y,label=DATAx[sampletotake[i]][5],linestyle=DATAx[sampletotake[i]][9],color=DATAx[sampletotake[i]][10])
-                    elif self.CheckLegJsc.get()==1 and self.CheckLegEg.get()==0:
-                        EQEfig.plot(x,y,label=DATAx[sampletotake[i]][6],linestyle=DATAx[sampletotake[i]][9],color=DATAx[sampletotake[i]][10])
-                    elif self.CheckLegJsc.get()==0 and self.CheckLegEg.get()==1:
-                        EQEfig.plot(x,y,label=DATAx[sampletotake[i]][7],linestyle=DATAx[sampletotake[i]][9],color=DATAx[sampletotake[i]][10])
-                    elif self.CheckLegJsc.get()==1 and self.CheckLegEg.get()==1:
-                        EQEfig.plot(x,y,label=DATAx[sampletotake[i]][8],linestyle=DATAx[sampletotake[i]][9],color=DATAx[sampletotake[i]][10])
-                else:
-                    EQEfig.plot(x,y,linestyle=DATAx[sampletotake[i]][9],color=DATAx[sampletotake[i]][10])
-                
-                if self.CheckTangent.get()==1:
-                    m=DATAx[sampletotake[i]][11]
-                    h=DATAx[sampletotake[i]][12]
-                    x2=1239.8/DATAx[sampletotake[i]][4]
-                    x=np.linspace(x2-100,x2,10)
-                    #x=np.array(range(int(round(x2-100)),int(round(x2))))
-                    y=eval('m*x+h')
-                    EQEfig.plot(x,y)
+                    if self.pos1.get()==5:
+                        self.leg=EQEfig.legend(bbox_to_anchor=(1, 0.5), loc=2, ncol=1)
+                    elif self.pos1.get()==1 or self.pos1.get()==2  or self.pos1.get()==3 or self.pos1.get()==4:   
+                        self.leg=EQEfig.legend(loc=self.pos1.get())
+                    else:
+                        self.leg=EQEfig.legend(loc=0)
+                self.EQEgraph.axis([self.minx.get(),self.maxx.get(),self.miny.get(),self.maxy.get()])
+                plt.gcf().canvas.draw()
+            else:#if wants the Jsc integrated curve in 2-y-axis graph
+                self.EQEgraph.clear()
+                self.EQEgraphY2.clear()
+                self.EQEgraphY2.get_yaxis().set_visible(True)
+                EQEfig=self.EQEgraph
+                ax2=self.EQEgraphY2
+                maxyvalues=[]
+                for i in range(len(sampletotake)):
+                    x = DATAx[sampletotake[i]][2]
+                    y = DATAx[sampletotake[i]][3]
+                    y2= DATAx[sampletotake[i]][28]
+                    maxyvalues.append(y2[-1])
+                    colx=["Wavelength","nm"," "]+x
+                    coly=["EQE","-",DATAx[sampletotake[i]][5]]+y
+                    coly2=["Jsc","mA/cm2",DATAx[sampletotake[i]][5]]+y2
+                    DATAforexport.append(colx)
+                    DATAforexport.append(coly)
+                    DATAforexport.append(coly2)
+                    
+                    if self.CheckLegend.get()==1:
+                        if self.CheckLegJsc.get()==0 and self.CheckLegEg.get()==0:
+                            EQEfig.plot(x,y,label=DATAx[sampletotake[i]][5],linestyle=DATAx[sampletotake[i]][9],color=DATAx[sampletotake[i]][10])
+                            ax2.plot(x,y2,label=DATAx[sampletotake[i]][5],linestyle=DATAx[sampletotake[i]][9],color=DATAx[sampletotake[i]][10])                      
+                        elif self.CheckLegJsc.get()==1 and self.CheckLegEg.get()==0:
+                            EQEfig.plot(x,y,label=DATAx[sampletotake[i]][6],linestyle=DATAx[sampletotake[i]][9],color=DATAx[sampletotake[i]][10])
+                            ax2.plot(x,y2,label=DATAx[sampletotake[i]][6],linestyle=DATAx[sampletotake[i]][9],color=DATAx[sampletotake[i]][10])
+                        elif self.CheckLegJsc.get()==0 and self.CheckLegEg.get()==1:
+                            EQEfig.plot(x,y,label=DATAx[sampletotake[i]][7],linestyle=DATAx[sampletotake[i]][9],color=DATAx[sampletotake[i]][10])
+                            ax2.plot(x,y2,label=DATAx[sampletotake[i]][7],linestyle=DATAx[sampletotake[i]][9],color=DATAx[sampletotake[i]][10])                        
+                        elif self.CheckLegJsc.get()==1 and self.CheckLegEg.get()==1:
+                            EQEfig.plot(x,y,label=DATAx[sampletotake[i]][8],linestyle=DATAx[sampletotake[i]][9],color=DATAx[sampletotake[i]][10])
+                            ax2.plot(x,y2,label=DATAx[sampletotake[i]][8],linestyle=DATAx[sampletotake[i]][9],color=DATAx[sampletotake[i]][10])                    
+                    else:
+                        EQEfig.plot(x,y,linestyle=DATAx[sampletotake[i]][9],color=DATAx[sampletotake[i]][10])
+                        ax2.plot(x,y2,linestyle=DATAx[sampletotake[i]][9],color=DATAx[sampletotake[i]][10])
                         
-            self.EQEgraph.set_ylabel('EQE (-)', fontsize=14)
-            self.EQEgraph.set_xlabel('Wavelength (nm)', fontsize=14)
-            if titEQE:
-                self.EQEgraph.set_title(self.titleEQE.get())
-            if self.CheckLegend.get()==1:
-                if self.pos1.get()==5:
-                    self.leg=EQEfig.legend(bbox_to_anchor=(1, 0.5), loc=2, ncol=1)
-                elif self.pos1.get()==1 or self.pos1.get()==2  or self.pos1.get()==3 or self.pos1.get()==4:   
-                    self.leg=EQEfig.legend(loc=self.pos1.get())
-                else:
-                    self.leg=EQEfig.legend(loc=0)
-            self.EQEgraph.axis([self.minx.get(),self.maxx.get(),self.miny.get(),self.maxy.get()])
-            plt.gcf().canvas.draw()
+                    if self.CheckTangent.get()==1:
+                        m=DATAx[sampletotake[i]][11]
+                        h=DATAx[sampletotake[i]][12]
+                        x2=1239.8/DATAx[sampletotake[i]][4]
+                        x=np.linspace(x2-100,x2,10)
+                        #x=np.array(range(int(round(x2-100)),int(round(x2))))
+                        y=eval('m*x+h')
+                        EQEfig.plot(x,y)
+                            
+                self.EQEgraph.set_ylabel('EQE (-)', fontsize=14)
+                self.EQEgraphY2.set_ylabel('Jsc',fontsize=14)
+                self.EQEgraph.set_xlabel('Wavelength (nm)', fontsize=14)
+                if titEQE:
+                    self.EQEgraph.set_title(self.titleEQE.get())
+                if self.CheckLegend.get()==1:
+                    if self.pos1.get()==5:
+                        self.leg=EQEfig.legend(bbox_to_anchor=(1, 0.5), loc=2, ncol=1)
+                    elif self.pos1.get()==1 or self.pos1.get()==2  or self.pos1.get()==3 or self.pos1.get()==4:   
+                        self.leg=EQEfig.legend(loc=self.pos1.get())
+                    else:
+                        self.leg=EQEfig.legend(loc=0)
+                self.EQEgraph.axis([self.minx.get(),self.maxx.get(),self.miny.get(),self.maxy.get()])
+                if maxyvalues==[]:
+                    maxyvalues=[1]
+                self.EQEgraphY2.axis([self.minx.get(),self.maxx.get(),0,math.ceil(max(maxyvalues))])
+                plt.gcf().canvas.draw()
             
         elif self.YtypeChoice.get()=="log":
             self.EQEgraph.clear()
+            self.EQEgraphY2.clear()
+            self.EQEgraphY2.get_yaxis().set_visible(False)
+#            self.EQEgraphY2.get_xaxis().set_visible(False)
             EQEfig=self.EQEgraph
+            minxlist=[]
+            maxxlist=[]
+            minylist=[]
+            maxylist=[]
             for i in range(len(sampletotake)):
                 x = DATAx[sampletotake[i]][15]
                 y = DATAx[sampletotake[i]][16]
+                minxlist.append(x[0])
+                maxxlist.append(x[-1])
+                minylist.append(min(y))
+                maxylist.append(max(y))
                 
                 colx=["Energy","eV"," "]+x
                 coly=["Ln(EQE)","-",DATAx[sampletotake[i]][5]]+y
@@ -987,17 +1134,27 @@ class EQEApp(Toplevel):
                     self.leg=EQEfig.legend(loc=self.pos1.get())
                 else:
                     self.leg=EQEfig.legend(loc=0)
-            if self.CheckAutoscale.get()==0:
-                self.EQEgraph.axis([self.minx.get(),self.maxx.get(),self.miny.get(),self.maxy.get()])
+#            if self.CheckAutoscale.get()==0:
+#                self.EQEgraph.axis([self.minx.get(),self.maxx.get(),self.miny.get(),self.maxy.get()])
+            self.EQEgraph.axis([min(minxlist),max(maxxlist),min(minylist),math.ceil(max(maxylist))])
             plt.gcf().canvas.draw()
             
         elif self.YtypeChoice.get()=="Tauc":
             self.EQEgraph.clear()
+            self.EQEgraphY2.clear()
+            self.EQEgraphY2.get_yaxis().set_visible(False)
             EQEfig=self.EQEgraph
+            minxlist=[]
+            maxxlist=[]
+            minylist=[]
+            maxylist=[]
             for i in range(len(sampletotake)):
                 x = DATAx[sampletotake[i]][20]
                 y = DATAx[sampletotake[i]][21]                
-                
+                minxlist.append(x[0])
+                maxxlist.append(x[-1])
+                minylist.append(min(y))
+                maxylist.append(max(y))
                 colx=["Energy","eV"," "]+x
                 coly=["Ln(1-EQE)^2 * E^2","a.u.",DATAx[sampletotake[i]][5]]+y
                 DATAforexport.append(colx)
@@ -1034,12 +1191,15 @@ class EQEApp(Toplevel):
                     self.leg=EQEfig.legend(loc=self.pos1.get())
                 else:
                     self.leg=EQEfig.legend(loc=0)
-            if self.CheckAutoscale.get()==0:        
-                self.EQEgraph.axis([self.minx.get(),self.maxx.get(),self.miny.get(),self.maxy.get()])
+#            if self.CheckAutoscale.get()==0:        
+#                self.EQEgraph.axis([self.minx.get(),self.maxx.get(),self.miny.get(),self.maxy.get()])
+            self.EQEgraph.axis([min(minxlist),max(maxxlist),min(minylist),math.ceil(max(maxylist))])
             plt.gcf().canvas.draw()
     
         elif self.YtypeChoice.get()=="NormalizedBySingle":
             self.EQEgraph.clear()
+            self.EQEgraphY2.clear()
+            self.EQEgraphY2.get_yaxis().set_visible(False)
             EQEfig=self.EQEgraph
             for i in range(len(sampletotake)):
                 x = DATAx[sampletotake[i]][2]
@@ -1079,6 +1239,8 @@ class EQEApp(Toplevel):
             
         elif self.YtypeChoice.get()=="NormalizedByAll":
             self.EQEgraph.clear()
+            self.EQEgraphY2.clear()
+            self.EQEgraphY2.get_yaxis().set_visible(False)
             EQEfig=self.EQEgraph
             AllY=[]
             for i in range(len(sampletotake)):

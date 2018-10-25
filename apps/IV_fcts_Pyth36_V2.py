@@ -44,6 +44,14 @@ TODOLIST
 - make it compatible with HIT files: how to select the batch, wafer, cell names? check with Mario&Co if they agreed on something
 
 
+- when finish autoanalysis, it doesn't plot back the same as before for the mpp and group
+
+- low-intensity meas: if several intensities for a single cell
+    get automatic graph of Voc&Jsc&FF as function of intensity
+    fits ? something to extract?
+
+- StatJVgraph: change it to similar to groupgraph. but samplename instead of group. to avoid voids
+
 """
 #%%############# Global variable definition
 testdata = []

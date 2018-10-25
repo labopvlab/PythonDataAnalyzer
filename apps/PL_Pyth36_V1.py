@@ -8,9 +8,14 @@ from scipy.optimize import curve_fit
 import numpy as np
 from scipy import integrate
 from scipy.interpolate import interp1d
+import peakutils
+from peakutils.plot import plot as pplot
+
 
 """
--
+- make gui to see the curves
+- noise filter and downsampling
+    https://mne-tools.github.io/0.13/auto_tutorials/plot_artifacts_correction_filtering.html
 
 """
 
@@ -171,6 +176,23 @@ def PLSummary():
                             minimum=min(corrinterm)
                             maximum=max(corrinterm)
                             intensitiescorrnorm.append([(x-minimum)/(maximum-minimum) for x in corrinterm])
+                        
+                        #peak finding, need some data smoothing and noise filters
+                        peaksXpositions=[]
+                        for j in range(len(intensitiescorrnorm)):
+                            x=np.array(energies)
+                            y=np.array(intensitiescorrnorm[j])
+                            indexes = peakutils.indexes(y, thres=0.999, min_dist=0.01)
+                            peaks_x = peakutils.interpolate(x, y, ind=indexes)
+#                            print(x[indexes])
+                            peaksXpositions.append(list(peaks_x))
+#                            plt.figure(figsize=(10,6))
+#                            pplot(x, y, indexes)
+                        
+                        
+                        plt.close()
+                        plt.figure(figsize=(10,6))
+                        pplot(x, y, indexes)
                         
                         entete2=" "
                         entete1="eV"
