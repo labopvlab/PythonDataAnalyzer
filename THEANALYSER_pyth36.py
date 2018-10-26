@@ -18,6 +18,7 @@ import EQE_fcts_Pyth36_v2 as EQEfcts
 import IV_fcts_Pyth36_V2 as IVfcts
 import JVfollowup_Pyth36_v0 as JVfollowup
 import Database_v0 as DB
+import XRD as xrd
 
 
 """todolist
@@ -84,6 +85,8 @@ class TheAnalyser(Frame):
         DBbutton.grid(row=6,column=17,columnspan=4)
         refcellbutton = Button(root, text='CellEvolCheck', command = self.callRefCell)
         refcellbutton.grid(row=6,column=14,columnspan=4)
+        XRDbutton = Button(root, text='XRD', command = self.callXRD)
+        XRDbutton.grid(row=3,column=16,columnspan=4)
         
             
     def callEQE(self):
@@ -122,7 +125,9 @@ class TheAnalyser(Frame):
                 
     def callDB(self):
         DB.DBapp()
-        
+    
+    def callXRD(self):
+        xrd.XRDautoanalysis()   
         
         
 root = Tk()
