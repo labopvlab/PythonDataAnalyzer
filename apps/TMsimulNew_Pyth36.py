@@ -16,12 +16,6 @@ still to be added:
     - E field in device
     - modifiable IQE
 
-- change dropdown selection of material to a popup window with a listbox and scrollable
-- 
-
-- replace dropdown menu list for load cellstack by selectfile window, so that we can load a new stack from another folder
-- close figure before shutting down app
-
 """
 #%%
 import os
@@ -30,7 +24,7 @@ import matplotlib.pyplot as plt
 from PIL import ImageTk
 import PIL.Image
 import tkinter as tk
-from tkinter import Entry,messagebox, Button, Checkbutton, IntVar, Toplevel, OptionMenu, Frame, StringVar, Scrollbar, Listbox
+from tkinter import ttk, Entry,messagebox, Button, Checkbutton, IntVar, Toplevel, OptionMenu, Frame, StringVar, Scrollbar, Listbox
 from tkinter import filedialog
 import numpy as np
 from tkinter import *
@@ -672,12 +666,13 @@ class TMSimApp(Toplevel):
         Entry(frame2, textvariable=self.EndWave,width=5).pack(side=tk.LEFT,expand=1) 
         self.EndWave.set(1200)
         
-        self.frame3=Frame(self,borderwidth=0,  bg="white")
-        self.frame3.pack(fill=tk.X,expand=0)           
-        self.StackChoice=StringVar()
-        self.dropMenuStack = OptionMenu(self.frame3, self.StackChoice, *stackNameList, command=())
-        self.dropMenuStack.pack(side=tk.LEFT,expand=1) 
-        self.LoadStack = Button(self.frame3, text="Load CellStack", command = self.loadstack)
+#        self.frame3=Frame(self,borderwidth=0,  bg="white")
+#        self.frame3.pack(fill=tk.X,expand=0)           
+#        self.StackChoice=StringVar()
+#        tk.Label(self.frame3, text=self.StackChoice.get(),font=SMALL_FONT,  bg="white").pack(side=tk.LEFT,expand=1)      
+#        self.dropMenuStack = OptionMenu(self.frame3, self.StackChoice, *stackNameList, command=())
+#        self.dropMenuStack.pack(side=tk.LEFT,expand=1) 
+        self.LoadStack = Button(frame2, text="Load CellStack", command = self.loadstack)
         self.LoadStack.pack(side=tk.RIGHT,expand=1) 
         
         #tk.Label(self, text=" ",font=SMALL_FONT,  bg="white").grid(row=7,column=0)
@@ -763,8 +758,9 @@ class TMSimApp(Toplevel):
             #the material of the layer
             MatThickActList[item][0]=StringVar()
             MatThickActList[item][0].set(matlist[item][0]) # default choice
-            self.dropMat=OptionMenu(self.frame6, MatThickActList[item][0], *matnamelist, command=())
-            self.dropMat.grid(row=item+1, column=2, columnspan=4)
+            
+            w = ttk.Combobox(self.frame6, textvariable=MatThickActList[item][0], values=matnamelist)            
+            w.grid(row=item+1, column=2, columnspan=4)
             
             #the thickness of the layer
             textinit = tk.IntVar()
@@ -957,7 +953,8 @@ class TMSimApp(Toplevel):
                 newlist.append(listorig[i])
         return newlist    
     
-    
+#    def selectMat(self,a):#create a pop-up window with a selectable list of materials in a listbox
+#        print(a)
     
     def loadstack(self):
         global MatThickActList
@@ -967,21 +964,25 @@ class TMSimApp(Toplevel):
         
         os.chdir(stackDir)
         
-        filepath=self.StackChoice.get()+".txt"
+        filepath =filedialog.askopenfilename(title="Please select the stack file", initialdir=stackDir)
+        if filepath!='':
+            try:
+                filetoread=open(filepath,"r")
+                filedata=filetoread.readlines()
+                
+                MatThickActList=[]
+                i=0
+                for item in filedata: 
+                    MatThickActList.append([item[:-1].split("\t")[0],int(item[:-1].split("\t")[1]),int(item[:-1].split("\t")[2]),int(item[:-1].split("\t")[3])])
+                    i+=1
+                numberofLayer=len(MatThickActList)
+                
+                os.chdir(owd)
+                
+                self.updatelist()
+            except:
+                messagebox.showinfo("Import failed","Might not be the correct file?!...")
     
-        filetoread=open(filepath,"r")
-        filedata=filetoread.readlines()
-        
-        MatThickActList=[]
-        i=0
-        for item in filedata: 
-            MatThickActList.append([item[:-1].split("\t")[0],int(item[:-1].split("\t")[1]),int(item[:-1].split("\t")[2]),int(item[:-1].split("\t")[3])])
-            i+=1
-        numberofLayer=len(MatThickActList)
-        
-        os.chdir(owd)
-        
-        self.updatelist()
     
     def savestack(self):
         global MatThickActList
@@ -1014,15 +1015,6 @@ class TMSimApp(Toplevel):
             stackNameList=[]
             for item in stacklist:
                 stackNameList.append(item.split('.')[0])
-                
-            for widget in self.frame3.winfo_children():
-                widget.destroy()
-            self.StackChoice=StringVar()
-            self.dropMenuStack = OptionMenu(self.frame3, self.StackChoice, *stackNameList, command=())
-            self.dropMenuStack.pack(side=tk.LEFT,expand=1) 
-            self.LoadStack = Button(self.frame3, text="Load CellStack", command = self.loadstack)
-            self.LoadStack.pack(side=tk.RIGHT,expand=1)
-            
         except:
             print("something wrong during saving process...")
         self.updatelist()
@@ -1170,7 +1162,7 @@ class TMSimApp(Toplevel):
             plt.ylim([0,1])
             plt.legend(loc='lower right',ncol=1)
             plt.savefig(f, dpi=300, transparent=False) 
-            
+            plt.close()
             datatoexportINV=[list(x) for x in zip(*datatoexport)]
             datatoexportINVtxt=[]
             for item in datatoexportINV:
@@ -1348,7 +1340,7 @@ class TMSimApp(Toplevel):
         plt.ylabel("Current")
         plt.legend(ncol=1)
         plt.savefig(self.f[:-4]+"_1D.png", dpi=300, transparent=False)
-        
+        plt.close()
         self.simulatedialog.destroy()
         self.updatelist()
         

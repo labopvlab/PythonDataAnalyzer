@@ -38,7 +38,6 @@ TODOLIST
 
 - low illumination: mirrored curves, chech automatically and mirror the curve
 - illumination intensity given in legend
-- graph with option to change colors by user, solid/dashed/doted lines
 => place dark data analysis in a pop-up window
  
 - make it compatible with HIT files: how to select the batch, wafer, cell names? check with Mario&Co if they agreed on something
@@ -50,7 +49,6 @@ TODOLIST
     get automatic graph of Voc&Jsc&FF as function of intensity
     fits ? something to extract?
 
-- StatJVgraph: change it to similar to groupgraph. but samplename instead of group. to avoid voids
 
 """
 #%%############# Global variable definition
@@ -179,11 +177,11 @@ class IVApp(Toplevel):
         
         self.RF = IntVar()
         RF=Checkbutton(self.superframe,text="RF",variable=self.RF, 
-                           onvalue=1,offvalue=0,height=1, width=3, command = (),fg='black',background='white')
+                           onvalue=1,offvalue=0,height=1, width=3, command = lambda: self.UpdateGroupGraph(1),fg='black',background='white')
         RF.grid(row=rowpos, column=columnpos+14, columnspan=3)
         self.boxplot = IntVar()
         boxplot=Checkbutton(self.superframe,text="box",variable=self.boxplot, 
-                           onvalue=1,offvalue=0,height=1, width=3, command = (),fg='black',background='white')
+                           onvalue=1,offvalue=0,height=1, width=3, command = lambda: self.UpdateGroupGraph(1),fg='black',background='white')
         boxplot.grid(row=rowpos, column=columnpos+17, columnspan=3)
         self.boxplot.set(1)
         
@@ -2582,97 +2580,97 @@ class IVApp(Toplevel):
                         for item0 in range(len(summary[item])):
                             worksheet.write(item,item0,summary[item][item0])
             
-            if timeLandD!=[]:
-                worksheet = workbook.add_worksheet("AllJVrawdata")
-                summary=[]
-                for item in range(len(timeLandD)):
-                    summary.append([timeLandD[item]["Group"],timeLandD[item]["SampleName"],timeLandD[item]["Cellletter"],timeLandD[item]["MeasDayTime"],timeLandD[item]["CellSurface"],str(timeLandD[item]["Voc"]),str(timeLandD[item]["Jsc"]),str(timeLandD[item]["FF"]),str(timeLandD[item]["Eff"]),str(timeLandD[item]["Pmpp"]),str(timeLandD[item]["Vmpp"]),str(timeLandD[item]["Jmpp"]),str(timeLandD[item]["Roc"]),str(timeLandD[item]["Rsc"]),str(timeLandD[item]["VocFF"]),str(timeLandD[item]["RscJsc"]),str(timeLandD[item]["NbPoints"]),timeLandD[item]["Delay"],timeLandD[item]["IntegTime"],timeLandD[item]["Vstart"],timeLandD[item]["Vend"],timeLandD[item]["Illumination"],timeLandD[item]["ScanDirection"],str('%.2f' % float(timeLandD[item]["ImaxComp"])),timeLandD[item]["Isenserange"],str(timeLandD[item]["AreaJV"]),timeLandD[item]["Operator"],timeLandD[item]["MeasComment"],timeLandD[item]["RefNomCurr"],timeLandD[item]["RefMeasCurr"],str(timeLandD[item]["AirTemp"]),str(timeLandD[item]["ChuckTemp"])])
-                summary.insert(0, ["-", "-", "-","-","cm2","mV","mA/cm2","%","%","W/cm2","mV","mA/cm2","Ohm*cm2","Ohm*cm2","-","-","-","s","s","mV","mV","-","-","A","A","-","-","-","mA","mA","DegC","DegC"])
-                summary.insert(0, ["Group","Sample Name", "Cell","MeasDayTime","Cell Surface","Voc","Jsc","FF","Eff","Pmpp","Vmpp","Jmpp","Roc","Rsc","VocFF","RscJsc","NbPoints","Delay","IntegTime","Vstart","Vend","Illumination","ScanDirection","ImaxComp","Isenserange","AreaJV","Operator","MeasComment","RefNomCurr","RefMeasCurr","AirTemp","ChuckTemp"])
-                for item in range(len(summary)):
-                    for item0 in range(len(summary[item])):
-                        worksheet.write(item,item0,summary[item][item0])
-            
-            if DATAx!=[]:
-                worksheet = workbook.add_worksheet("rawdataLight")
-                summary=[]
-                for item in range(len(DATAx)):
-                    summary.append([DATAx[item]["Group"],DATAx[item]["SampleName"],DATAx[item]["Cellletter"],DATAx[item]["MeasDayTime"],DATAx[item]["CellSurface"],str(DATAx[item]["Voc"]),str(DATAx[item]["Jsc"]),str(DATAx[item]["FF"]),str(DATAx[item]["Eff"]),str(DATAx[item]["Pmpp"]),str(DATAx[item]["Vmpp"]),str(DATAx[item]["Jmpp"]),str(DATAx[item]["Roc"]),str(DATAx[item]["Rsc"]),str(DATAx[item]["VocFF"]),str(DATAx[item]["RscJsc"]),str(DATAx[item]["NbPoints"]),str(DATAx[item]["Delay"]),str(DATAx[item]["IntegTime"]),str(DATAx[item]["Vstart"]),str(DATAx[item]["Vend"]),str(DATAx[item]["Illumination"]),str(DATAx[item]["ScanDirection"]),str('%.2f' % float(DATAx[item]["ImaxComp"])),str(DATAx[item]["Isenserange"]),str(DATAx[item]["AreaJV"]),DATAx[item]["Operator"],DATAx[item]["MeasComment"],timeLandD[item]["RefNomCurr"],timeLandD[item]["RefMeasCurr"],str(timeLandD[item]["AirTemp"]),str(timeLandD[item]["ChuckTemp"])])
-                summary.insert(0, ["-", "-", "-","-","cm2","mV","mA/cm2","%","%","W/cm2","mV","mA/cm2","Ohm*cm2","Ohm*cm2","-","-","-","s","s","mV","mV","-","-","A","A","-","-","-","mA","mA","DegC","DegC"])
-                summary.insert(0, ["Group","Sample Name", "Cell","MeasDayTime","Cell Surface","Voc","Jsc","FF","Eff","Pmpp","Vmpp","Jmpp","Roc","Rsc","VocFF","RscJsc","NbPoints","Delay","IntegTime","Vstart","Vend","Illumination","ScanDirection","ImaxComp","Isenserange","AreaJV","Operator","MeasComment","RefNomCurr","RefMeasCurr","AirTemp","ChuckTemp"])
-                for item in range(len(summary)):
-                    for item0 in range(len(summary[item])):
-                        worksheet.write(item,item0,summary[item][item0])
-            
-            if DATAdark!=[]:
-                worksheet = workbook.add_worksheet("rawdatadark")
-                summary=[]
-                for item in range(len(DATAdark)):
-                    summary.append([DATAdark[item]["Group"],DATAdark[item]["SampleName"],DATAdark[item]["Cellletter"],DATAdark[item]["MeasDayTime"],DATAdark[item]["CellSurface"],str(DATAdark[item]["Voc"]),str(DATAdark[item]["Jsc"]),str(DATAdark[item]["FF"]),str(DATAdark[item]["Eff"]),str(DATAdark[item]["Pmpp"]),str(DATAdark[item]["Vmpp"]),str(DATAdark[item]["Jmpp"]),str(DATAdark[item]["Roc"]),str(DATAdark[item]["Rsc"]),str(DATAdark[item]["VocFF"]),str(DATAdark[item]["RscJsc"]),str(DATAdark[item]["NbPoints"]),DATAdark[item]["Delay"],DATAdark[item]["IntegTime"],DATAdark[item]["Vstart"],DATAdark[item]["Vend"],DATAdark[item]["Illumination"],DATAdark[item]["ScanDirection"],str('%.2f' % float(DATAdark[item]["ImaxComp"])),DATAdark[item]["Isenserange"],str(DATAdark[item]["AreaJV"]),DATAdark[item]["Operator"],DATAdark[item]["MeasComment"],timeLandD[item]["RefNomCurr"],timeLandD[item]["RefMeasCurr"],str(timeLandD[item]["AirTemp"]),str(timeLandD[item]["ChuckTemp"])])
-                summary.insert(0, ["-", "-", "-","cm2","mV","mA/cm2","%","%","W/cm2","mV","mA/cm2","Ohm*cm2","Ohm*cm2","-","-","-","s","s","mV","mV","-","-","A","A","-","-","-","mA","mA","DegC","DegC"])
-                summary.insert(0, ["Sample Name", "Cell","MeasDayTime","Cell Surface","Voc","Jsc","FF","Eff","Pmpp","Vmpp","Jmpp","Roc","Rsc","VocFF","RscJsc","NbPoints","Delay","IntegTime","Vstart","Vend","Illumination","ScanDirection","ImaxComp","Isenserange","AreaJV","Operator","MeasComment","RefNomCurr","RefMeasCurr","AirTemp","ChuckTemp"])
-                for item in range(len(summary)):
-                    for item0 in range(len(summary[item])):
-                        worksheet.write(item,item0,summary[item][item0])
-                        
-            sorted_bestEff= sorted(bestEff, key=itemgetter('Eff'), reverse=True) 
-            if sorted_bestEff!=[]:        
-                worksheet = workbook.add_worksheet("besteff")
-                summary=[]
-                for item in range(len(sorted_bestEff)):
-                    summary.append([sorted_bestEff[item]["Group"],sorted_bestEff[item]["SampleName"],sorted_bestEff[item]["Cellletter"],sorted_bestEff[item]["MeasDayTime"],sorted_bestEff[item]["CellSurface"],str(sorted_bestEff[item]["Voc"]),str(sorted_bestEff[item]["Jsc"]),str(sorted_bestEff[item]["FF"]),str(sorted_bestEff[item]["Eff"]),str(sorted_bestEff[item]["Pmpp"]),str(sorted_bestEff[item]["Vmpp"]),str(sorted_bestEff[item]["Jmpp"]),str(sorted_bestEff[item]["Roc"]),str(sorted_bestEff[item]["Rsc"]),str(sorted_bestEff[item]["VocFF"]),str(sorted_bestEff[item]["RscJsc"]),str(sorted_bestEff[item]["NbPoints"]),sorted_bestEff[item]["Delay"],sorted_bestEff[item]["IntegTime"],sorted_bestEff[item]["Vstart"],sorted_bestEff[item]["Vend"],sorted_bestEff[item]["Illumination"],sorted_bestEff[item]["ScanDirection"],str('%.2f' % float(sorted_bestEff[item]["ImaxComp"])),sorted_bestEff[item]["Isenserange"],str(sorted_bestEff[item]["AreaJV"]),sorted_bestEff[item]["Operator"],sorted_bestEff[item]["MeasComment"],timeLandD[item]["RefNomCurr"],timeLandD[item]["RefMeasCurr"],str(timeLandD[item]["AirTemp"]),str(timeLandD[item]["ChuckTemp"])])
-                summary.insert(0, ["-", "-", "-", "-","cm2","mV","mA/cm2","%","%","W/cm2","mV","mA/cm2","Ohm*cm2","Ohm*cm2","-","-","-","s","s","mV","mV","-","-","A","A","-","-","-","mA","mA","DegC","DegC"])
-                summary.insert(0, ["Group","Sample Name", "Cell","MeasDayTime","Cell Surface","Voc","Jsc","FF","Eff","Pmpp","Vmpp","Jmpp","Roc","Rsc","VocFF","RscJsc","NbPoints","Delay","IntegTime","Vstart","Vend","Illumination","ScanDirection","ImaxComp","Isenserange","AreaJV","Operator","MeasComment","RefNomCurr","RefMeasCurr","AirTemp","ChuckTemp"])
-                for item in range(len(summary)):
-                    for item0 in range(len(summary[item])):
-                        worksheet.write(item,item0,summary[item][item0])
-            sorted_bestvocff= sorted(bestvocff, key=itemgetter('VocFF'), reverse=True) 
-            if sorted_bestvocff!=[]: 
-                worksheet = workbook.add_worksheet("bestvocff")
-                summary=[]
-                for item in range(len(sorted_bestvocff)):
-                    summary.append([sorted_bestvocff[item]["Group"], sorted_bestvocff[item]["SampleName"],sorted_bestvocff[item]["Cellletter"],sorted_bestvocff[item]["MeasDayTime"],sorted_bestvocff[item]["CellSurface"],str(sorted_bestvocff[item]["Voc"]),str(sorted_bestvocff[item]["Jsc"]),str(sorted_bestvocff[item]["FF"]),str(sorted_bestvocff[item]["Eff"]),str(sorted_bestvocff[item]["Pmpp"]),str(sorted_bestvocff[item]["Vmpp"]),str(sorted_bestvocff[item]["Jmpp"]),str(sorted_bestvocff[item]["Roc"]),str(sorted_bestvocff[item]["Rsc"]),str(sorted_bestvocff[item]["VocFF"]),str(sorted_bestvocff[item]["RscJsc"]),str(sorted_bestvocff[item]["NbPoints"]),sorted_bestvocff[item]["Delay"],sorted_bestvocff[item]["IntegTime"],sorted_bestvocff[item]["Vstart"],sorted_bestvocff[item]["Vend"],sorted_bestvocff[item]["Illumination"],sorted_bestvocff[item]["ScanDirection"],str('%.2f' % float(sorted_bestvocff[item]["ImaxComp"])),sorted_bestvocff[item]["Isenserange"],str(sorted_bestvocff[item]["AreaJV"]),sorted_bestvocff[item]["Operator"],sorted_bestvocff[item]["MeasComment"],timeLandD[item]["RefNomCurr"],timeLandD[item]["RefMeasCurr"],str(timeLandD[item]["AirTemp"]),str(timeLandD[item]["ChuckTemp"])])
-                summary.insert(0, ["-", "-", "-","-","cm2","mV","mA/cm2","%","%","W/cm2","mV","mA/cm2","Ohm*cm2","Ohm*cm2","-","-","-","s","s","mV","mV","-","-","A","A","-","-","-","mA","mA","DegC","DegC"])
-                summary.insert(0, ["Group","Sample Name", "Cell","MeasDayTime","Cell Surface","Voc","Jsc","FF","Eff","Pmpp","Vmpp","Jmpp","Roc","Rsc","VocFF","RscJsc","NbPoints","Delay","IntegTime","Vstart","Vend","Illumination","ScanDirection","ImaxComp","Isenserange","AreaJV","Operator","MeasComment","RefNomCurr","RefMeasCurr","AirTemp","ChuckTemp"])
-                for item in range(len(summary)):
-                    for item0 in range(len(summary[item])):
-                        worksheet.write(item,item0,summary[item][item0])
-            
-            if DATAMPP!=[]: 
-                worksheet = workbook.add_worksheet("Pmpp")
-                summary=[]
-                for item in range(len(DATAMPP)):
-                    summary.append([DATAMPP[item]["Group"],DATAMPP[item]["SampleName"],DATAMPP[item]["Cellletter"],DATAMPP[item]["MeasDayTime"],float('%.2f' % float(DATAMPP[item]["CellSurface"])),DATAMPP[item]["Delay"],DATAMPP[item]["IntegTime"],float(DATAMPP[item]["Vstep"]),float(DATAMPP[item]["Vstart"]),float('%.1f' % float(DATAMPP[item]["MppData"][2][-1])),DATAMPP[item]["Operator"],DATAMPP[item]["MeasComment"]])
-                summary.insert(0, ["Group","Sample Name", "Cell","MeasDayTime","Cell Surface","Delay","IntegTime","Vstep","Vstart","ExecTime","Operator","MeasComment"])
-                for item in range(len(summary)):
-                    for item0 in range(len(summary[item])):
-                        worksheet.write(item,item0,summary[item][item0])
-            
-            if DATAFV!=[]: 
-                worksheet = workbook.add_worksheet("fixedvoltage")
-                summary=[]
-                for item in range(len(DATAFV)):
-                    summary.append([DATAFV[item]["Group"],DATAFV[item]["SampleName"],DATAFV[item]["Cellletter"],DATAFV[item]["MeasDayTime"],float('%.2f' % float(DATAFV[item]["CellSurface"])),DATAFV[item]["Delay"],DATAFV[item]["IntegTime"],DATAFV[item]["NbCycle"],float(DATAFV[item]["Vstep"]),float(DATAFV[item]["ExecTime"]),float(DATAFV[item]["TimeatZero"]),DATAFV[item]["Operator"],DATAFV[item]["MeasComment"]])
-                summary.insert(0, ["Group", "Sample Name", "Cell","MeasDayTime","Cell Surface","Delay","IntegTime","NbCycle","Initial voltage step", "Time at voltage bias", "Time at zero", "Operator","MeasComment"])
-                for item in range(len(summary)):
-                    for item0 in range(len(summary[item])):
-                        worksheet.write(item,item0,summary[item][item0])
-                    
-            if LandD!=[]:            
-                sorted_dataall = sorted(LandD, key=itemgetter('DepID')) 
-                for key, group in groupby(sorted_dataall, key=lambda x:x['DepID']):
-                    partdat=list(group)
-                    worksheet = workbook.add_worksheet(key)
+                if timeLandD!=[]:
+                    worksheet = workbook.add_worksheet("AllJVrawdata")
                     summary=[]
-                    for item in range(len(partdat)):
-                        summary.append([partdat[item]["Group"],partdat[item]["SampleName"],partdat[item]["Cellletter"],partdat[item]["MeasDayTime"],partdat[item]["CellSurface"],str(partdat[item]["Voc"]),str(partdat[item]["Jsc"]),str(partdat[item]["FF"]),str(partdat[item]["Eff"]),str(partdat[item]["Pmpp"]),str(partdat[item]["Vmpp"]),str(partdat[item]["Jmpp"]),str(partdat[item]["Roc"]),str(partdat[item]["Rsc"]),str(partdat[item]["VocFF"]),str(partdat[item]["RscJsc"]),str(partdat[item]["NbPoints"]),partdat[item]["Delay"],partdat[item]["IntegTime"],partdat[item]["Vstart"],partdat[item]["Vend"],partdat[item]["Illumination"],partdat[item]["ScanDirection"],str('%.2f' % float(partdat[item]["ImaxComp"])),partdat[item]["Isenserange"],str(partdat[item]["AreaJV"]),partdat[item]["Operator"],partdat[item]["MeasComment"],timeLandD[item]["RefNomCurr"],timeLandD[item]["RefMeasCurr"],str(timeLandD[item]["AirTemp"]),str(timeLandD[item]["ChuckTemp"])])
+                    for item in range(len(timeLandD)):
+                        summary.append([timeLandD[item]["Group"],timeLandD[item]["SampleName"],timeLandD[item]["Cellletter"],timeLandD[item]["MeasDayTime"],timeLandD[item]["CellSurface"],str(timeLandD[item]["Voc"]),str(timeLandD[item]["Jsc"]),str(timeLandD[item]["FF"]),str(timeLandD[item]["Eff"]),str(timeLandD[item]["Pmpp"]),str(timeLandD[item]["Vmpp"]),str(timeLandD[item]["Jmpp"]),str(timeLandD[item]["Roc"]),str(timeLandD[item]["Rsc"]),str(timeLandD[item]["VocFF"]),str(timeLandD[item]["RscJsc"]),str(timeLandD[item]["NbPoints"]),timeLandD[item]["Delay"],timeLandD[item]["IntegTime"],timeLandD[item]["Vstart"],timeLandD[item]["Vend"],timeLandD[item]["Illumination"],timeLandD[item]["ScanDirection"],str('%.2f' % float(timeLandD[item]["ImaxComp"])),timeLandD[item]["Isenserange"],str(timeLandD[item]["AreaJV"]),timeLandD[item]["Operator"],timeLandD[item]["MeasComment"],timeLandD[item]["RefNomCurr"],timeLandD[item]["RefMeasCurr"],str(timeLandD[item]["AirTemp"]),str(timeLandD[item]["ChuckTemp"])])
                     summary.insert(0, ["-", "-", "-","-","cm2","mV","mA/cm2","%","%","W/cm2","mV","mA/cm2","Ohm*cm2","Ohm*cm2","-","-","-","s","s","mV","mV","-","-","A","A","-","-","-","mA","mA","DegC","DegC"])
-                    summary.insert(0, ["Group", "Sample Name", "Cell","MeasDayTime","Cell Surface","Voc","Jsc","FF","Eff","Pmpp","Vmpp","Jmpp","Roc","Rsc","VocFF","RscJsc","NbPoints","Delay","IntegTime","Vstart","Vend","Illumination","ScanDirection","ImaxComp","Isenserange","AreaJV","Operator","MeasComment","RefNomCurr","RefMeasCurr","AirTemp","ChuckTemp"])
+                    summary.insert(0, ["Group","Sample Name", "Cell","MeasDayTime","Cell Surface","Voc","Jsc","FF","Eff","Pmpp","Vmpp","Jmpp","Roc","Rsc","VocFF","RscJsc","NbPoints","Delay","IntegTime","Vstart","Vend","Illumination","ScanDirection","ImaxComp","Isenserange","AreaJV","Operator","MeasComment","RefNomCurr","RefMeasCurr","AirTemp","ChuckTemp"])
+                    for item in range(len(summary)):
+                        for item0 in range(len(summary[item])):
+                            worksheet.write(item,item0,summary[item][item0])
+                
+                if DATAx!=[]:
+                    worksheet = workbook.add_worksheet("rawdataLight")
+                    summary=[]
+                    for item in range(len(DATAx)):
+                        summary.append([DATAx[item]["Group"],DATAx[item]["SampleName"],DATAx[item]["Cellletter"],DATAx[item]["MeasDayTime"],DATAx[item]["CellSurface"],str(DATAx[item]["Voc"]),str(DATAx[item]["Jsc"]),str(DATAx[item]["FF"]),str(DATAx[item]["Eff"]),str(DATAx[item]["Pmpp"]),str(DATAx[item]["Vmpp"]),str(DATAx[item]["Jmpp"]),str(DATAx[item]["Roc"]),str(DATAx[item]["Rsc"]),str(DATAx[item]["VocFF"]),str(DATAx[item]["RscJsc"]),str(DATAx[item]["NbPoints"]),str(DATAx[item]["Delay"]),str(DATAx[item]["IntegTime"]),str(DATAx[item]["Vstart"]),str(DATAx[item]["Vend"]),str(DATAx[item]["Illumination"]),str(DATAx[item]["ScanDirection"]),str('%.2f' % float(DATAx[item]["ImaxComp"])),str(DATAx[item]["Isenserange"]),str(DATAx[item]["AreaJV"]),DATAx[item]["Operator"],DATAx[item]["MeasComment"],timeLandD[item]["RefNomCurr"],timeLandD[item]["RefMeasCurr"],str(timeLandD[item]["AirTemp"]),str(timeLandD[item]["ChuckTemp"])])
+                    summary.insert(0, ["-", "-", "-","-","cm2","mV","mA/cm2","%","%","W/cm2","mV","mA/cm2","Ohm*cm2","Ohm*cm2","-","-","-","s","s","mV","mV","-","-","A","A","-","-","-","mA","mA","DegC","DegC"])
+                    summary.insert(0, ["Group","Sample Name", "Cell","MeasDayTime","Cell Surface","Voc","Jsc","FF","Eff","Pmpp","Vmpp","Jmpp","Roc","Rsc","VocFF","RscJsc","NbPoints","Delay","IntegTime","Vstart","Vend","Illumination","ScanDirection","ImaxComp","Isenserange","AreaJV","Operator","MeasComment","RefNomCurr","RefMeasCurr","AirTemp","ChuckTemp"])
+                    for item in range(len(summary)):
+                        for item0 in range(len(summary[item])):
+                            worksheet.write(item,item0,summary[item][item0])
+                
+                if DATAdark!=[]:
+                    worksheet = workbook.add_worksheet("rawdatadark")
+                    summary=[]
+                    for item in range(len(DATAdark)):
+                        summary.append([DATAdark[item]["Group"],DATAdark[item]["SampleName"],DATAdark[item]["Cellletter"],DATAdark[item]["MeasDayTime"],DATAdark[item]["CellSurface"],str(DATAdark[item]["Voc"]),str(DATAdark[item]["Jsc"]),str(DATAdark[item]["FF"]),str(DATAdark[item]["Eff"]),str(DATAdark[item]["Pmpp"]),str(DATAdark[item]["Vmpp"]),str(DATAdark[item]["Jmpp"]),str(DATAdark[item]["Roc"]),str(DATAdark[item]["Rsc"]),str(DATAdark[item]["VocFF"]),str(DATAdark[item]["RscJsc"]),str(DATAdark[item]["NbPoints"]),DATAdark[item]["Delay"],DATAdark[item]["IntegTime"],DATAdark[item]["Vstart"],DATAdark[item]["Vend"],DATAdark[item]["Illumination"],DATAdark[item]["ScanDirection"],str('%.2f' % float(DATAdark[item]["ImaxComp"])),DATAdark[item]["Isenserange"],str(DATAdark[item]["AreaJV"]),DATAdark[item]["Operator"],DATAdark[item]["MeasComment"],timeLandD[item]["RefNomCurr"],timeLandD[item]["RefMeasCurr"],str(timeLandD[item]["AirTemp"]),str(timeLandD[item]["ChuckTemp"])])
+                    summary.insert(0, ["-", "-", "-","cm2","mV","mA/cm2","%","%","W/cm2","mV","mA/cm2","Ohm*cm2","Ohm*cm2","-","-","-","s","s","mV","mV","-","-","A","A","-","-","-","mA","mA","DegC","DegC"])
+                    summary.insert(0, ["Sample Name", "Cell","MeasDayTime","Cell Surface","Voc","Jsc","FF","Eff","Pmpp","Vmpp","Jmpp","Roc","Rsc","VocFF","RscJsc","NbPoints","Delay","IntegTime","Vstart","Vend","Illumination","ScanDirection","ImaxComp","Isenserange","AreaJV","Operator","MeasComment","RefNomCurr","RefMeasCurr","AirTemp","ChuckTemp"])
                     for item in range(len(summary)):
                         for item0 in range(len(summary[item])):
                             worksheet.write(item,item0,summary[item][item0])
                             
-            workbook.close()
+                sorted_bestEff= sorted(bestEff, key=itemgetter('Eff'), reverse=True) 
+                if sorted_bestEff!=[]:        
+                    worksheet = workbook.add_worksheet("besteff")
+                    summary=[]
+                    for item in range(len(sorted_bestEff)):
+                        summary.append([sorted_bestEff[item]["Group"],sorted_bestEff[item]["SampleName"],sorted_bestEff[item]["Cellletter"],sorted_bestEff[item]["MeasDayTime"],sorted_bestEff[item]["CellSurface"],str(sorted_bestEff[item]["Voc"]),str(sorted_bestEff[item]["Jsc"]),str(sorted_bestEff[item]["FF"]),str(sorted_bestEff[item]["Eff"]),str(sorted_bestEff[item]["Pmpp"]),str(sorted_bestEff[item]["Vmpp"]),str(sorted_bestEff[item]["Jmpp"]),str(sorted_bestEff[item]["Roc"]),str(sorted_bestEff[item]["Rsc"]),str(sorted_bestEff[item]["VocFF"]),str(sorted_bestEff[item]["RscJsc"]),str(sorted_bestEff[item]["NbPoints"]),sorted_bestEff[item]["Delay"],sorted_bestEff[item]["IntegTime"],sorted_bestEff[item]["Vstart"],sorted_bestEff[item]["Vend"],sorted_bestEff[item]["Illumination"],sorted_bestEff[item]["ScanDirection"],str('%.2f' % float(sorted_bestEff[item]["ImaxComp"])),sorted_bestEff[item]["Isenserange"],str(sorted_bestEff[item]["AreaJV"]),sorted_bestEff[item]["Operator"],sorted_bestEff[item]["MeasComment"],timeLandD[item]["RefNomCurr"],timeLandD[item]["RefMeasCurr"],str(timeLandD[item]["AirTemp"]),str(timeLandD[item]["ChuckTemp"])])
+                    summary.insert(0, ["-", "-", "-", "-","cm2","mV","mA/cm2","%","%","W/cm2","mV","mA/cm2","Ohm*cm2","Ohm*cm2","-","-","-","s","s","mV","mV","-","-","A","A","-","-","-","mA","mA","DegC","DegC"])
+                    summary.insert(0, ["Group","Sample Name", "Cell","MeasDayTime","Cell Surface","Voc","Jsc","FF","Eff","Pmpp","Vmpp","Jmpp","Roc","Rsc","VocFF","RscJsc","NbPoints","Delay","IntegTime","Vstart","Vend","Illumination","ScanDirection","ImaxComp","Isenserange","AreaJV","Operator","MeasComment","RefNomCurr","RefMeasCurr","AirTemp","ChuckTemp"])
+                    for item in range(len(summary)):
+                        for item0 in range(len(summary[item])):
+                            worksheet.write(item,item0,summary[item][item0])
+                sorted_bestvocff= sorted(bestvocff, key=itemgetter('VocFF'), reverse=True) 
+                if sorted_bestvocff!=[]: 
+                    worksheet = workbook.add_worksheet("bestvocff")
+                    summary=[]
+                    for item in range(len(sorted_bestvocff)):
+                        summary.append([sorted_bestvocff[item]["Group"], sorted_bestvocff[item]["SampleName"],sorted_bestvocff[item]["Cellletter"],sorted_bestvocff[item]["MeasDayTime"],sorted_bestvocff[item]["CellSurface"],str(sorted_bestvocff[item]["Voc"]),str(sorted_bestvocff[item]["Jsc"]),str(sorted_bestvocff[item]["FF"]),str(sorted_bestvocff[item]["Eff"]),str(sorted_bestvocff[item]["Pmpp"]),str(sorted_bestvocff[item]["Vmpp"]),str(sorted_bestvocff[item]["Jmpp"]),str(sorted_bestvocff[item]["Roc"]),str(sorted_bestvocff[item]["Rsc"]),str(sorted_bestvocff[item]["VocFF"]),str(sorted_bestvocff[item]["RscJsc"]),str(sorted_bestvocff[item]["NbPoints"]),sorted_bestvocff[item]["Delay"],sorted_bestvocff[item]["IntegTime"],sorted_bestvocff[item]["Vstart"],sorted_bestvocff[item]["Vend"],sorted_bestvocff[item]["Illumination"],sorted_bestvocff[item]["ScanDirection"],str('%.2f' % float(sorted_bestvocff[item]["ImaxComp"])),sorted_bestvocff[item]["Isenserange"],str(sorted_bestvocff[item]["AreaJV"]),sorted_bestvocff[item]["Operator"],sorted_bestvocff[item]["MeasComment"],timeLandD[item]["RefNomCurr"],timeLandD[item]["RefMeasCurr"],str(timeLandD[item]["AirTemp"]),str(timeLandD[item]["ChuckTemp"])])
+                    summary.insert(0, ["-", "-", "-","-","cm2","mV","mA/cm2","%","%","W/cm2","mV","mA/cm2","Ohm*cm2","Ohm*cm2","-","-","-","s","s","mV","mV","-","-","A","A","-","-","-","mA","mA","DegC","DegC"])
+                    summary.insert(0, ["Group","Sample Name", "Cell","MeasDayTime","Cell Surface","Voc","Jsc","FF","Eff","Pmpp","Vmpp","Jmpp","Roc","Rsc","VocFF","RscJsc","NbPoints","Delay","IntegTime","Vstart","Vend","Illumination","ScanDirection","ImaxComp","Isenserange","AreaJV","Operator","MeasComment","RefNomCurr","RefMeasCurr","AirTemp","ChuckTemp"])
+                    for item in range(len(summary)):
+                        for item0 in range(len(summary[item])):
+                            worksheet.write(item,item0,summary[item][item0])
+                
+                if DATAMPP!=[]: 
+                    worksheet = workbook.add_worksheet("Pmpp")
+                    summary=[]
+                    for item in range(len(DATAMPP)):
+                        summary.append([DATAMPP[item]["Group"],DATAMPP[item]["SampleName"],DATAMPP[item]["Cellletter"],DATAMPP[item]["MeasDayTime"],float('%.2f' % float(DATAMPP[item]["CellSurface"])),DATAMPP[item]["Delay"],DATAMPP[item]["IntegTime"],float(DATAMPP[item]["Vstep"]),float(DATAMPP[item]["Vstart"]),float('%.1f' % float(DATAMPP[item]["MppData"][2][-1])),DATAMPP[item]["Operator"],DATAMPP[item]["MeasComment"]])
+                    summary.insert(0, ["Group","Sample Name", "Cell","MeasDayTime","Cell Surface","Delay","IntegTime","Vstep","Vstart","ExecTime","Operator","MeasComment"])
+                    for item in range(len(summary)):
+                        for item0 in range(len(summary[item])):
+                            worksheet.write(item,item0,summary[item][item0])
+                
+                if DATAFV!=[]: 
+                    worksheet = workbook.add_worksheet("fixedvoltage")
+                    summary=[]
+                    for item in range(len(DATAFV)):
+                        summary.append([DATAFV[item]["Group"],DATAFV[item]["SampleName"],DATAFV[item]["Cellletter"],DATAFV[item]["MeasDayTime"],float('%.2f' % float(DATAFV[item]["CellSurface"])),DATAFV[item]["Delay"],DATAFV[item]["IntegTime"],DATAFV[item]["NbCycle"],float(DATAFV[item]["Vstep"]),float(DATAFV[item]["ExecTime"]),float(DATAFV[item]["TimeatZero"]),DATAFV[item]["Operator"],DATAFV[item]["MeasComment"]])
+                    summary.insert(0, ["Group", "Sample Name", "Cell","MeasDayTime","Cell Surface","Delay","IntegTime","NbCycle","Initial voltage step", "Time at voltage bias", "Time at zero", "Operator","MeasComment"])
+                    for item in range(len(summary)):
+                        for item0 in range(len(summary[item])):
+                            worksheet.write(item,item0,summary[item][item0])
+                        
+                if LandD!=[]:            
+                    sorted_dataall = sorted(LandD, key=itemgetter('DepID')) 
+                    for key, group in groupby(sorted_dataall, key=lambda x:x['DepID']):
+                        partdat=list(group)
+                        worksheet = workbook.add_worksheet(key)
+                        summary=[]
+                        for item in range(len(partdat)):
+                            summary.append([partdat[item]["Group"],partdat[item]["SampleName"],partdat[item]["Cellletter"],partdat[item]["MeasDayTime"],partdat[item]["CellSurface"],str(partdat[item]["Voc"]),str(partdat[item]["Jsc"]),str(partdat[item]["FF"]),str(partdat[item]["Eff"]),str(partdat[item]["Pmpp"]),str(partdat[item]["Vmpp"]),str(partdat[item]["Jmpp"]),str(partdat[item]["Roc"]),str(partdat[item]["Rsc"]),str(partdat[item]["VocFF"]),str(partdat[item]["RscJsc"]),str(partdat[item]["NbPoints"]),partdat[item]["Delay"],partdat[item]["IntegTime"],partdat[item]["Vstart"],partdat[item]["Vend"],partdat[item]["Illumination"],partdat[item]["ScanDirection"],str('%.2f' % float(partdat[item]["ImaxComp"])),partdat[item]["Isenserange"],str(partdat[item]["AreaJV"]),partdat[item]["Operator"],partdat[item]["MeasComment"],timeLandD[item]["RefNomCurr"],timeLandD[item]["RefMeasCurr"],str(timeLandD[item]["AirTemp"]),str(timeLandD[item]["ChuckTemp"])])
+                        summary.insert(0, ["-", "-", "-","-","cm2","mV","mA/cm2","%","%","W/cm2","mV","mA/cm2","Ohm*cm2","Ohm*cm2","-","-","-","s","s","mV","mV","-","-","A","A","-","-","-","mA","mA","DegC","DegC"])
+                        summary.insert(0, ["Group", "Sample Name", "Cell","MeasDayTime","Cell Surface","Voc","Jsc","FF","Eff","Pmpp","Vmpp","Jmpp","Roc","Rsc","VocFF","RscJsc","NbPoints","Delay","IntegTime","Vstart","Vend","Illumination","ScanDirection","ImaxComp","Isenserange","AreaJV","Operator","MeasComment","RefNomCurr","RefMeasCurr","AirTemp","ChuckTemp"])
+                        for item in range(len(summary)):
+                            for item0 in range(len(summary[item])):
+                                worksheet.write(item,item0,summary[item][item0])
+                                
+                workbook.close()
         except:
             print("there's an issue with creating excel summary file")
             
@@ -3268,7 +3266,7 @@ class IVApp(Toplevel):
             self.UpdateIVGraph()
         
         if DATAMPP!=[]:
-            print("il y a des mpp")
+#            print("il y a des mpp")
             self.mppnames = ()
             self.mppnames=self.SampleMppNames(DATAMPP)
             self.mppmenu = tk.Menu(self.mppmenubutton, tearoff=False)
@@ -3278,7 +3276,8 @@ class IVApp(Toplevel):
                 self.choicesmpp[choice] = tk.IntVar(value=0)
                 self.mppmenu.add_checkbutton(label=self.mppnames[choice], variable=self.choicesmpp[choice], 
                                      onvalue=1, offvalue=0, command = self.UpdateMppGraph0)
-               
+            self.UpdateMppGraph0() 
+        self.UpdateGroupGraph(1)
         self.updateTable()
         
 #%%######################################################################

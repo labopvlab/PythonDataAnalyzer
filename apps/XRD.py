@@ -14,6 +14,8 @@ import peakutils
 from peakutils.plot import plot as pplot
 import xlsxwriter
 import xlrd
+from matplotlib import colors as mcolors
+
 
 """"
 - align xrd data with reference to one particular peak: 
@@ -24,15 +26,9 @@ import xlrd
         can compare the data to this database by superposing the graphs
         automatic finding: compares the peak positions and propose a material which has correspondances
 
-- plot several xrd data in one graph and arrange the data vertically
-
-- before autoanalysis, ask user to choose threshold, min_dist and select a type of substrate: 
-    if Si or glass or ITO, then can detect automatically the corresponding characteristic peak and align 
-    all curves accordingly. 
 - add option to choose the format of the exported graphs: .pdf, .png, .tiff...
 
 """
-
 
 
 
@@ -79,10 +75,10 @@ def listofpeakinfo(x,y,indexes,samplename):#x and y are np.arrays
                     center=x[indexes[item]]
                     
                     
-                    plt.plot(x0, y0)
-                    plt.plot([x0[0],x0[-1]],[bhleft,bhright])
-                    plt.plot(x0,y0,ms=0)
-                    plt.plot([xleftfwhm,xrightfwhm],[yfwhm,yfwhm])
+                    plt.plot(x0, y0, 'red')
+                    plt.plot([x0[0],x0[-1]],[bhleft,bhright],'blue')
+#                    plt.plot(x0,y0,ms=0)
+                    plt.plot([xleftfwhm,xrightfwhm],[yfwhm,yfwhm],'green')
                     plt.text(center,max(y0)+200,str('%.1f' % float(center)),rotation=90,verticalalignment='bottom',horizontalalignment='center',multialignment='center')
                    
                     
@@ -102,6 +98,8 @@ def listofpeakinfo(x,y,indexes,samplename):#x and y are np.arrays
                     break
     plt.scatter(x[indexes],y[indexes],c='red',s=12)
     plt.legend()
+    plt.ylabel("Intensity (a.u.)")
+    plt.xlabel("2\u0398 (degree)")
     plt.savefig(samplename+'.pdf')
 #    plt.show()
     plt.close()
@@ -141,10 +139,13 @@ def listofpeakinfo(x,y,indexes,samplename):#x and y are np.arrays
 
 #%%
 def XRDautoanalysis():
-    file_path =filedialog.askopenfilenames(title="Please select the XRD files")
+    global colorstylelist
     
+    file_path =filedialog.askopenfilenames(title="Please select the XRD files")
     #select a result folder
-    current_path = os.getcwd()
+    
+    current_path=os.path.dirname(os.path.dirname(file_path[0]))
+#    print(current_path)
     folderName = filedialog.askdirectory(title = "choose a folder to export the auto-analysis results", initialdir=current_path)
     os.chdir(folderName)
     
@@ -182,7 +183,7 @@ def XRDautoanalysis():
             if len(indexes)<15:
                 break
             else:
-                threshold+=0.02
+                threshold+=0.01
         
         dat=listofpeakinfo(x,y,indexes,samplename)
         
@@ -212,7 +213,7 @@ def XRDautoanalysis():
         plt.text(5,DATA[i][2][1]+cumulativeheight,DATA[i][0],horizontalalignment='right',fontdict=font,bbox=dict(facecolor='white', edgecolor='white', pad=0.0))
     
     plt.yticks([])
-    plt.xlabel("2Theta (degree)")
+    plt.xlabel("2\u0398 (degree)")
     plt.savefig('Allxrdtogether.pdf')
     #plt.show()
     
@@ -243,11 +244,12 @@ def XRDautoanalysis():
     for i in range(len(DATA)):
         for j in range(len(DATA[i][3])):
             if DATA[i][3][j][0]<=13:
-                if DATA[i][3][j][0]>12 and DATA[i][3][j][0]<13:
+                if DATA[i][3][j][0]>12 and DATA[i][3][j][0]<13.2:
                     worksheetdat.append([DATA[i][0],DATA[i][3][j][0],DATA[i][3][j][1],DATA[i][3][j][2]])
                     plt.plot(DATA[i][1],DATA[i][2],label=DATA[i][0])
-                    if max(DATA[i][2])>maxpeak:
-                        maxpeak=max(DATA[i][2])
+                    maxPbi2=max([DATA[i][2][k] for k in range(len(DATA[i][1])) if DATA[i][1][k]<13.2 and DATA[i][1][k]>12])
+                    if maxPbi2>maxpeak:
+                        maxpeak=maxPbi2
             else:
                 break
     for item in range(len(worksheetdat)):
@@ -255,17 +257,18 @@ def XRDautoanalysis():
             worksheet.write(item,item0,worksheetdat[item][item0])
     plt.xlim(right=13.2)
     plt.xlim(left=12.2)
-    plt.ylim(top=maxpeak)
+    plt.ylim(top=1.01*maxpeak)
     plt.ylim(bottom=0)
     plt.yticks([])
     plt.ylabel("Intensity (a.u.)")
     plt.xlabel("2\u0398 (degree)")
-    if item>7:
-        leg=PbI2peak.legend(loc='center left', bbox_to_anchor=(0.2, 0.7),ncol=2)
-    else:
-        leg=PbI2peak.legend(loc='center left', bbox_to_anchor=(0.2, 0.7),ncol=1)
-    extent = PbI2peak.get_window_extent().transformed(PbI2peak.dpi_scale_trans.inverted())
-    PbI2peak.savefig('PbI2peaks.pdf', dpi=300, bbox_extra_artists=(leg,), transparent=True) 
+    if len(worksheetdat)>1:
+        if item>7:
+            leg=PbI2peak.legend(loc='center left', bbox_to_anchor=(0.2, 0.7),ncol=2)
+        else:
+            leg=PbI2peak.legend(loc='center left', bbox_to_anchor=(0.2, 0.7),ncol=1)
+    #    extent = PbI2peak.get_window_extent().transformed(PbI2peak.dpi_scale_trans.inverted())
+        PbI2peak.savefig('PbI2peaks.pdf', dpi=300, bbox_extra_artists=(leg,), transparent=True) 
     
     #plt.savefig('PbI2peaks.pdf')
     plt.close()
@@ -281,8 +284,9 @@ def XRDautoanalysis():
                 if DATA[i][3][j][0]>13.5 and DATA[i][3][j][0]<15:
                     worksheetdat.append([DATA[i][0],DATA[i][3][j][0],DATA[i][3][j][1],DATA[i][3][j][2]])
                     plt.plot(DATA[i][1],DATA[i][2],label=DATA[i][0])
-                    if max(DATA[i][2])>maxpeak:
-                        maxpeak=max(DATA[i][2])
+                    maxPk=max([DATA[i][2][k] for k in range(len(DATA[i][1])) if DATA[i][1][k]<15 and DATA[i][1][k]>13.5])
+                    if maxPk>maxpeak:
+                        maxpeak=maxPk
             else:
                 break
     for item in range(len(worksheetdat)):
@@ -290,19 +294,20 @@ def XRDautoanalysis():
             worksheet.write(item,item0,worksheetdat[item][item0])
     plt.xlim(right=15)
     plt.xlim(left=13.5)
-    plt.ylim(top=maxpeak)
+    plt.ylim(top=1.01*maxpeak)
     plt.ylim(bottom=0)
     plt.yticks([])
     plt.ylabel("Intensity (a.u.)")
     plt.xlabel("2\u0398 (degree)")
-    #plt.legend(bbox_to_anchor=(1, 1), loc='upper left', ncol=1)
-    if item>7:
-        leg=PKpeak.legend(loc='center left', bbox_to_anchor=(0.2, 0.7),ncol=2)
-    else:
-        leg=PKpeak.legend(loc='center left', bbox_to_anchor=(0.2, 0.7),ncol=1)
-    extent = PKpeak.get_window_extent().transformed(PKpeak.dpi_scale_trans.inverted())
-    PKpeak.savefig('PKpeaks.pdf', dpi=300, bbox_extra_artists=(leg,), transparent=True) 
-    #plt.savefig('PKpeaks.pdf')
+    if len(worksheetdat)>1:
+        #plt.legend(bbox_to_anchor=(1, 1), loc='upper left', ncol=1)
+        if item>7:
+            leg=PKpeak.legend(loc='center left', bbox_to_anchor=(0.2, 0.7),ncol=2)
+        else:
+            leg=PKpeak.legend(loc='center left', bbox_to_anchor=(0.2, 0.7),ncol=1)
+    #    extent = PKpeak.get_window_extent().transformed(PKpeak.dpi_scale_trans.inverted())
+        PKpeak.savefig('PKpeaks.pdf', dpi=300, bbox_extra_artists=(leg,), transparent=True) 
+        #plt.savefig('PKpeaks.pdf')
     
     
     #one tab per sample with peaks position, height and FWHM
@@ -316,6 +321,9 @@ def XRDautoanalysis():
     plt.close()
     
     messagebox.showinfo("Information","The analysis is over")
+
+if __name__ == '__main__':    
+    XRDautoanalysis()
     
 
 #%%
