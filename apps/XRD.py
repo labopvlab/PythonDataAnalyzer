@@ -1,453 +1,200 @@
 #! python3
 
-import os
-from tkinter import filedialog
-import csv
-import math
-from tkinter import Tk, messagebox
+import os, datetime
+
 import matplotlib.pyplot as plt
-from scipy.optimize import curve_fit
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+
+import tkinter as tk
+from tkinter import Tk, messagebox, Entry, Button, Checkbutton, IntVar, Toplevel, OptionMenu, Frame, StringVar, Scrollbar, Listbox
+from tkinter import filedialog
+from tkinter import *
+from pathlib import Path
 import numpy as np
-from scipy import integrate
-from scipy.interpolate import interp1d
-import peakutils
-from peakutils.plot import plot as pplot
 import xlsxwriter
 import xlrd
-from matplotlib import colors as mcolors
+from scipy.interpolate import interp1d, UnivariateSpline
+from scipy import integrate, stats
+from tkcolorpicker import askcolor 
+import six
+from functools import partial
+import math
+import sqlite3
+import csv
+from scipy.optimize import curve_fit
+import peakutils
+from peakutils.plot import plot as pplot
 
-
-""""
-- align xrd data with reference to one particular peak: 
-        detect peaks => get selectable list of peaks => reasign one peak to user-defined value
-- extract peak positions and intensities
-        user defined threshold and min_dist for peak finding
-- database of xrd data for typical materials
-        can compare the data to this database by superposing the graphs
-        automatic finding: compares the peak positions and propose a material which has correspondances
-
-- add option to choose the format of the exported graphs: .pdf, .png, .tiff...
 
 """
+TODOLIST
 
 
+"""
+#%%
+LARGE_FONT= ("Verdana", 12)
+
+def center(win):
+    win.update_idletasks()
+    width = win.winfo_width()
+    frm_width = win.winfo_rootx() - win.winfo_x()
+    win_width = width + 2 * frm_width
+    height = win.winfo_height()
+    titlebar_height = win.winfo_rooty() - win.winfo_y()
+    win_height = height + titlebar_height + frm_width
+    x = win.winfo_screenwidth() // 2 - win_width // 2
+    y = win.winfo_screenheight() // 2 - win_height // 2
+    win.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+    win.deiconify()
+
+titEQE=0
+EQElegendMod=[]
+DATAFORGRAPH=[]
+DATAforexport=[]
+takenforplot=[]
+listofanswer=[]
+listoflinestyle=[]
+listofcolorstyle=[]
+colorstylelist = ['black', 'red', 'blue', 'brown', 'green','cyan','magenta','olive','navy','orange','gray','aliceblue','antiquewhite','aqua','aquamarine','azure','beige','bisque','blanchedalmond','blue','blueviolet','brown','burlywood','cadetblue','chartreuse','chocolate','coral','cornflowerblue','cornsilk','crimson','darkblue','darkcyan','darkgoldenrod','darkgray','darkgreen','darkkhaki','darkmagenta','darkolivegreen','darkorange','darkorchid','darkred','darksalmon','darkseagreen','darkslateblue','darkslategray','darkturquoise','darkviolet','deeppink','deepskyblue','dimgray','dodgerblue','firebrick','floralwhite','forestgreen','fuchsia','gainsboro','ghostwhite','gold','goldenrod','greenyellow','honeydew','hotpink','indianred','indigo','ivory','khaki','lavender','lavenderblush','lawngreen','lemonchiffon','lightblue','lightcoral','lightcyan','lightgoldenrodyellow','lightgreen','lightgray','lightpink','lightsalmon','lightseagreen','lightskyblue','lightslategray','lightsteelblue','lightyellow','lime','limegreen','linen','magenta','maroon','mediumaquamarine','mediumblue','mediumorchid','mediumpurple','mediumseagreen','mediumslateblue','mediumspringgreen','mediumturquoise','mediumvioletred','midnightblue','mintcream','mistyrose','moccasin','navajowhite','navy','oldlace','olive','olivedrab','orange','orangered','orchid','palegoldenrod','palegreen','paleturquoise','palevioletred','papayawhip','peachpuff','peru','pink','plum','powderblue','purple','red','rosybrown','royalblue','saddlebrown','salmon','sandybrown','seagreen','seashell','sienna','silver','skyblue','slateblue','slategray','snow','springgreen','steelblue','tan','teal','thistle','tomato','turquoise','violet','wheat','white','whitesmoke','yellow','yellowgreen']
 
 
-
-def listofpeakinfo(x,y,indexes,samplename):#x and y are np.arrays
-
-    peakdata=[]
-    try:
-        plt.clear()
-    except:
-        pass
-    plt.figure(figsize=(10,6))
-    plt.plot(x,y,'black',label=samplename)
+#%%###############################################################################             
     
-    
-    for item in range(len(indexes)):
-        nbofpoints=80#on each side of max position
-        while(1):
-            try:
-                x0=x[indexes[item]-nbofpoints:indexes[item]+nbofpoints]
-                y0=y[indexes[item]-nbofpoints:indexes[item]+nbofpoints]
+class XRDApp(Toplevel):
+
+    def __init__(self, *args, **kwargs):
         
-                #baseline height
-                bhleft=np.mean(y0[:20])
-                bhright=np.mean(y0[-20:])
-                baselineheightatmaxpeak=(bhleft+bhright)/2
-                
-                if abs(bhleft-bhright)<50:#arbitrary choice of criteria...
-                    #find FWHM
-                    d=y0-((max(y0)-bhright)/2)
-                    ind=np.where(d>bhright)[0]
-                    
-                    hl=(x0[ind[0]-1]*y0[ind[0]]-y0[ind[0]-1]*x0[ind[0]])/(x0[ind[0]-1]-x0[ind[0]])
-                    ml=(y0[ind[0]-1]-hl)/x0[ind[0]-1]
-                    yfwhm=((max(y0)-baselineheightatmaxpeak)/2)+baselineheightatmaxpeak
-                    xleftfwhm=(yfwhm - hl)/ml
-                    hr=(x0[ind[-1]]*y0[ind[-1]+1]-y0[ind[-1]]*x0[ind[-1]+1])/(x0[ind[-1]]-x0[ind[-1]+1])
-                    mr=(y0[ind[-1]]-hr)/x0[ind[-1]]
-                    xrightfwhm=(yfwhm - hr)/mr
-                    
-                    FWHM=abs(xrightfwhm-xleftfwhm)
-                    Peakheight=max(y0)-baselineheightatmaxpeak
-                    center=x[indexes[item]]
-                    
-                    
-                    plt.plot(x0, y0, 'red')
-                    plt.plot([x0[0],x0[-1]],[bhleft,bhright],'blue')
-#                    plt.plot(x0,y0,ms=0)
-                    plt.plot([xleftfwhm,xrightfwhm],[yfwhm,yfwhm],'green')
-                    plt.text(center,max(y0)+200,str('%.1f' % float(center)),rotation=90,verticalalignment='bottom',horizontalalignment='center',multialignment='center')
-                   
-                    
-                    peakdata.append([center,FWHM,Peakheight])
-                    break
-                else:
-                    if nbofpoints>=15:
-                        nbofpoints-=10
-                    else:
-                        print("indexerror unsolvable")
-                        break
-            except IndexError:
-                if nbofpoints>=15:
-                    nbofpoints-=10
-                else:
-                    print("indexerror unsolvable")
-                    break
-    plt.scatter(x[indexes],y[indexes],c='red',s=12)
-    plt.legend()
-    plt.ylabel("Intensity (a.u.)")
-    plt.xlabel("2\u0398 (degree)")
-    plt.savefig(samplename+'.pdf')
-#    plt.show()
-    plt.close()
-    return peakdata
+        Toplevel.__init__(self, *args, **kwargs)
+        Toplevel.wm_title(self, "XRDApp")
+        Toplevel.config(self,background="white")
+        self.wm_geometry("550x550")
+        center(self)
+        self.initUI()
 
 
-#%%
-#threshold=0.05
-#MinDist=50
-#    
-#filetoread = open(os.path.join('C:\\Users\\jwerner\\switchdrive\\python\\xrddata\\data','P514_25.asc'))
-#samplename="name"
-#filerawdata = filetoread.readlines()
-#DATA=[]
-#x=[]
-#y=[]
-#    
-#for item in filerawdata:
-#    x.append(float(item.split(' ')[0]))
-#    y.append(float(item.split(' ')[1]))
-#
-#x=np.array(x)
-#y=np.array(y)
-#if max(y)>3000:
-#    threshold=0.05
-#else:
-#    threshold=0.065
-#indexes = peakutils.indexes(y, thres=threshold, min_dist=MinDist)
-#
-#dat=listofpeakinfo(x,y,indexes,samplename)
-#
-#DATA.append([str(samplename),x,y,dat,max([item[2] for item in dat])])#[samplename,X,Y,[[center,FWHM,Peakheight],[]...],maxpeakheight]
+    def initUI(self):
+        self.master.withdraw()
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
+        
+        self.canvas0 = tk.Canvas(self, borderwidth=0, background="#ffffff")
+        self.superframe=Frame(self.canvas0,background="#ffffff")
+        self.canvas0.pack(side="left", fill="both", expand=True)
+        
+        label = tk.Label(self.canvas0, text="XRD DATA Analyzer", font=LARGE_FONT, bg="black",fg="white")
+        label.pack(fill=tk.X,expand=0)
+        
+        frame1=Frame(self.canvas0,borderwidth=0,  bg="white")
+        frame1.pack(fill=tk.BOTH,expand=1)
+        frame1.bind("<Configure>", self.onFrameConfigure)
+        self.fig1 = plt.figure(figsize=(1, 1))
+        canvas = FigureCanvasTkAgg(self.fig1, frame1)
+        canvas.get_tk_widget().pack(fill=tk.BOTH,expand=1)
+        self.XRDgraph = plt.subplot2grid((1, 1), (0, 0), colspan=3)
+        self.toolbar = NavigationToolbar2TkAgg(canvas, frame1)
+        self.toolbar.update()
+        canvas._tkcanvas.pack(fill = tk.BOTH, expand = 1) 
+        
+        frame2=Frame(self.canvas0,borderwidth=0,  bg="white")
+        frame2.pack(fill=tk.X,expand=0)
+        
+        frame21=Frame(frame2,borderwidth=0,  bg="white")
+        frame21.pack(side=tk.LEFT,fill=tk.X,expand=1)
+        frame211=Frame(frame21,borderwidth=0,  bg="white")
+        frame211.pack(fill=tk.X,expand=0)
+        self.shift = tk.DoubleVar()
+        Entry(frame211, textvariable=self.shift,width=5).pack(side=tk.LEFT,fill=tk.X,expand=1)
+        self.shiftBut = Button(frame211, text="Shift to ref peak",command = ()).pack(side=tk.LEFT,expand=1)
+        self.shift.set(0)
+        frame212=Frame(frame21,borderwidth=0,  bg="white")
+        frame212.pack(fill=tk.X,expand=0)
+        self.CheckBkgRemoval = IntVar()
+        legend=Checkbutton(frame212,text='BkgRemoval',variable=self.CheckBkgRemoval, 
+                           onvalue=1,offvalue=0,height=1, width=10, command = (), bg="white")
+        legend.pack(side=tk.LEFT,expand=1)
+        frame213=Frame(frame21,borderwidth=0,  bg="white")
+        frame213.pack(fill=tk.X,expand=0)
+        self.rescale = tk.DoubleVar()
+        Entry(frame213, textvariable=self.rescale,width=5).pack(side=tk.LEFT,fill=tk.X,expand=1)
+        self.rescale.set(990)
+        self.rescaleBut = Button(frame213, text="Rescale to ref",command = ()).pack(side=tk.LEFT,expand=1)
 
-#plt.figure(figsize=(10,15))
-#plt.plot(DATA[0][1],DATA[0][2])
+        
+        frame22=Frame(frame2,borderwidth=0,  bg="blue")
+        frame22.pack(side=tk.LEFT,fill=tk.X,expand=1)
+        frame221=Frame(frame22,borderwidth=0,  bg="white")
+        frame221.pack(fill=tk.X,expand=0)
+        self.importBut = Button(frame221, text="Import",command = ()).pack(side=tk.LEFT,fill=tk.X,expand=1)
+        self.UpdateBut = Button(frame221, text="Update",command = ()).pack(side=tk.LEFT,fill=tk.X,expand=1)
+        frame222=Frame(frame22,borderwidth=0,  bg="white")
+        frame222.pack(fill=tk.X,expand=0)
+        self.ShowPeakDetectionBut = Button(frame222, text="Show Peak Detection",command = ()).pack(side=tk.LEFT,fill=tk.X,expand=1)
+        frame223=Frame(frame22,borderwidth=0,  bg="white")
+        frame223.pack(fill=tk.X,expand=0)
+        self.thresholdPeakDet = tk.DoubleVar()
+        Entry(frame223, textvariable=self.thresholdPeakDet,width=5).pack(side=tk.LEFT,fill=tk.X,expand=1)
+        self.thresholdPeakDet.set(0.05)
+        tk.Label(frame223, text="Threshold", bg="white").pack(side=tk.LEFT,fill=tk.X,expand=1)
+        self.MinDistPeakDet = tk.DoubleVar()
+        Entry(frame223, textvariable=self.MinDistPeakDet,width=5).pack(side=tk.LEFT,fill=tk.X,expand=1)
+        self.MinDistPeakDet.set(40)
+        tk.Label(frame223, text="MinDist", bg="white").pack(side=tk.LEFT,fill=tk.X,expand=1)
 
+        
+        frame23=Frame(frame2,borderwidth=0,  bg="red")
+        frame23.pack(fill=tk.X,expand=0)
+        self.ExportBut = Button(frame23, text="Export",command = ()).pack(fill=tk.X,expand=1)
+        self.GraphCheck = IntVar()
+        legend=Checkbutton(frame23,text='Graph',variable=self.GraphCheck, 
+                           onvalue=1,offvalue=0,height=1, width=10, command = (), bg="white")
+        legend.pack(expand=1)
+        self.PeakData = IntVar()
+        legend=Checkbutton(frame23,text='PeakData',variable=self.PeakData, 
+                           onvalue=1,offvalue=0,height=1, width=10, command = (), bg="white")
+        legend.pack(expand=1)
+        
+        
+        frame3=Frame(self.canvas0,borderwidth=0,  bg="white")
+        frame3.pack(fill=tk.X,expand=0)
+        
+        
+        
+        
 
-#%%
-def XRDautoanalysis():
-    global colorstylelist
-    
-    file_path =filedialog.askopenfilenames(title="Please select the XRD files")
-    #select a result folder
-    
-    current_path=os.path.dirname(os.path.dirname(file_path[0]))
-#    print(current_path)
-    folderName = filedialog.askdirectory(title = "choose a folder to export the auto-analysis results", initialdir=current_path)
-    os.chdir(folderName)
-    
-    DATA=[]
-    #analyze and create data list
-    #export graphs on-the-fly
-    
-    for filename in file_path:
-        filetoread = open(filename,"r")
-        filerawdata = filetoread.readlines()
-        samplename=os.path.splitext(os.path.basename(filename))[0]
-    
-        x=[]
-        y=[]
+    def on_closing(self):
+        global titEQE
+        global EQElegendMod
+        global DATAFORGRAPH
+        global DATAforexport
+        global takenforplot
+        global listofanswer
+        global listoflinestyle
+        global listofcolorstyle
+        global colorstylelist
+        
+        if messagebox.askokcancel("Quit", "Do you want to quit?"):
+            titEQE=0
+            EQElegendMod=[]
+            DATAFORGRAPH=[]
+            DATAforexport=[]
+            takenforplot=[]
+            listofanswer=[]
+            listoflinestyle=[]
+            listofcolorstyle=[]
+            colorstylelist = ['black', 'red', 'blue', 'brown', 'green','cyan','magenta','olive','navy','orange','gray','aliceblue','antiquewhite','aqua','aquamarine','azure','beige','bisque','blanchedalmond','blue','blueviolet','brown','burlywood','cadetblue','chartreuse','chocolate','coral','cornflowerblue','cornsilk','crimson','darkblue','darkcyan','darkgoldenrod','darkgray','darkgreen','darkkhaki','darkmagenta','darkolivegreen','darkorange','darkorchid','darkred','darksalmon','darkseagreen','darkslateblue','darkslategray','darkturquoise','darkviolet','deeppink','deepskyblue','dimgray','dodgerblue','firebrick','floralwhite','forestgreen','fuchsia','gainsboro','ghostwhite','gold','goldenrod','greenyellow','honeydew','hotpink','indianred','indigo','ivory','khaki','lavender','lavenderblush','lawngreen','lemonchiffon','lightblue','lightcoral','lightcyan','lightgoldenrodyellow','lightgreen','lightgray','lightpink','lightsalmon','lightseagreen','lightskyblue','lightslategray','lightsteelblue','lightyellow','lime','limegreen','linen','magenta','maroon','mediumaquamarine','mediumblue','mediumorchid','mediumpurple','mediumseagreen','mediumslateblue','mediumspringgreen','mediumturquoise','mediumvioletred','midnightblue','mintcream','mistyrose','moccasin','navajowhite','navy','oldlace','olive','olivedrab','orange','orangered','orchid','palegoldenrod','palegreen','paleturquoise','palevioletred','papayawhip','peachpuff','peru','pink','plum','powderblue','purple','red','rosybrown','royalblue','saddlebrown','salmon','sandybrown','seagreen','seashell','sienna','silver','skyblue','slateblue','slategray','snow','springgreen','steelblue','tan','teal','thistle','tomato','turquoise','violet','wheat','white','whitesmoke','yellow','yellowgreen']
+            plt.close()
+            self.destroy()
+            self.master.deiconify()
+    def onFrameConfigure(self, event):
+        #self.canvas0.configure(scrollregion=self.canvas0.bbox("all"))
+        self.canvas0.configure(scrollregion=(0,0,500,500))
             
-        for item in filerawdata:
-            x.append(float(item.split(' ')[0]))
-            y.append(float(item.split(' ')[1]))
-        
-        x=np.array(x)
-        y=np.array(y)
-        
-    #    if max(y)<3000:
-    #        threshold=0.065
-    #    elif max(y)>3000 and max(y)<10000:
-    #        threshold=0.05
-    #    elif max(y)>10000:
-    #        threshold=0.04    
-        threshold=0.01  
-        MinDist=50
-        
-        while(1):
-            indexes = peakutils.indexes(y, thres=threshold, min_dist=MinDist)
-    #        print(len(indexes))
-            if len(indexes)<15:
-                break
-            else:
-                threshold+=0.01
-        
-        dat=listofpeakinfo(x,y,indexes,samplename)
-        
-        DATA.append([str(samplename),x,y,dat,max([item[2] for item in dat])])#[samplename,X,Y,[[center,FWHM,Peakheight],[]...],maxpeakheight]
     
-    #create a graph with all rawdata arranged vertically, without overlapping
-    font = {'color':  'black',
-            'weight': 'bold',
-            'size': 12
-            }
+     
+#%%#############         
+###############################################################################        
+if __name__ == '__main__':
     
-    plt.figure(figsize=(10,15))
-    plt.plot(DATA[0][1],DATA[0][2])
-    plt.text(5,DATA[0][2][1],DATA[0][0],horizontalalignment='right',fontdict=font,bbox=dict(facecolor='white', edgecolor='white', pad=0.0))
-    cumulativeheight=0
-    dataextended=[list(DATA[0][1]),list(DATA[0][2])]
-    headings=["2theta\tIntensity\t","deg\t-\t","-\t"+DATA[0][0]+"\t"]
-    for i in range(1,len(DATA)):
-        cumulativeheight+=float(max(DATA[i-1][2]))+200
-        newy=[item2+cumulativeheight for item2 in list(DATA[i][2])]
-        dataextended.append(list(DATA[i][1]))
-        dataextended.append(newy)
-        headings[0]+="2theta\tIntensity\t"
-        headings[1]+="deg\t-\t"
-        headings[2]+="-\t"+DATA[i][0]+"\t"
-        plt.plot(list(DATA[i][1]),newy)
-        plt.text(5,DATA[i][2][1]+cumulativeheight,DATA[i][0],horizontalalignment='right',fontdict=font,bbox=dict(facecolor='white', edgecolor='white', pad=0.0))
-    
-    plt.yticks([])
-    plt.xlabel("2\u0398 (degree)")
-    plt.savefig('Allxrdtogether.pdf')
-    #plt.show()
-    
-    #export txt file with rawdata to replot it in origin
-    dataextended=list(map(list,zip(*dataextended)))
-    
-    for i in range(len(dataextended)):
-        textdat=""
-        for item in dataextended[i]:
-            textdat+=str(item)+"\t"
-        headings.append(textdat)
-    
-    for i in range(len(headings)):
-        headings[i]=headings[i][:-1]+"\n"
-    file = open("Allxrdtogether.txt",'w')
-    file.writelines("%s" % item for item in headings)
-    file.close()
-    #export excel summary file with all peak info
-    workbook = xlsxwriter.Workbook('Summary.xlsx')
-    
-    #one tab for PbI2 peak: look for samples having a peak between 11.5 and 13
-    #export graph of xrd curves restricted to this peak
-    plt.close()
-    PbI2peak=plt.figure(figsize=(10,6))
-    worksheet = workbook.add_worksheet("PbI2-12ishDeg")
-    worksheetdat=[["SampleName","Position","FWHM","Intensity"]]
-    maxpeak=0
-    for i in range(len(DATA)):
-        for j in range(len(DATA[i][3])):
-            if DATA[i][3][j][0]<=13:
-                if DATA[i][3][j][0]>12 and DATA[i][3][j][0]<13.2:
-                    worksheetdat.append([DATA[i][0],DATA[i][3][j][0],DATA[i][3][j][1],DATA[i][3][j][2]])
-                    plt.plot(DATA[i][1],DATA[i][2],label=DATA[i][0])
-                    maxPbi2=max([DATA[i][2][k] for k in range(len(DATA[i][1])) if DATA[i][1][k]<13.2 and DATA[i][1][k]>12])
-                    if maxPbi2>maxpeak:
-                        maxpeak=maxPbi2
-            else:
-                break
-    for item in range(len(worksheetdat)):
-        for item0 in range(len(worksheetdat[item])):
-            worksheet.write(item,item0,worksheetdat[item][item0])
-    plt.xlim(right=13.2)
-    plt.xlim(left=12.2)
-    plt.ylim(top=1.01*maxpeak)
-    plt.ylim(bottom=0)
-    plt.yticks([])
-    plt.ylabel("Intensity (a.u.)")
-    plt.xlabel("2\u0398 (degree)")
-    if len(worksheetdat)>1:
-        if item>7:
-            leg=PbI2peak.legend(loc='center left', bbox_to_anchor=(0.2, 0.7),ncol=2)
-        else:
-            leg=PbI2peak.legend(loc='center left', bbox_to_anchor=(0.2, 0.7),ncol=1)
-    #    extent = PbI2peak.get_window_extent().transformed(PbI2peak.dpi_scale_trans.inverted())
-        PbI2peak.savefig('PbI2peaks.pdf', dpi=300, bbox_extra_artists=(leg,), transparent=True) 
-    
-    #plt.savefig('PbI2peaks.pdf')
-    plt.close()
-    PKpeak=plt.figure(figsize=(10,6))
-    #one tab for Perovskite: between 13.5 and 15
-    #export graph of xrd curves restricted to this peak
-    worksheet = workbook.add_worksheet("Pk-14ishDeg")
-    worksheetdat=[["SampleName","Position","FWHM","Intensity"]]
-    maxpeak=0
-    for i in range(len(DATA)):
-        for j in range(len(DATA[i][3])):
-            if DATA[i][3][j][0]<=15:
-                if DATA[i][3][j][0]>13.5 and DATA[i][3][j][0]<15:
-                    worksheetdat.append([DATA[i][0],DATA[i][3][j][0],DATA[i][3][j][1],DATA[i][3][j][2]])
-                    plt.plot(DATA[i][1],DATA[i][2],label=DATA[i][0])
-                    maxPk=max([DATA[i][2][k] for k in range(len(DATA[i][1])) if DATA[i][1][k]<15 and DATA[i][1][k]>13.5])
-                    if maxPk>maxpeak:
-                        maxpeak=maxPk
-            else:
-                break
-    for item in range(len(worksheetdat)):
-        for item0 in range(len(worksheetdat[item])):
-            worksheet.write(item,item0,worksheetdat[item][item0])
-    plt.xlim(right=15)
-    plt.xlim(left=13.5)
-    plt.ylim(top=1.01*maxpeak)
-    plt.ylim(bottom=0)
-    plt.yticks([])
-    plt.ylabel("Intensity (a.u.)")
-    plt.xlabel("2\u0398 (degree)")
-    if len(worksheetdat)>1:
-        #plt.legend(bbox_to_anchor=(1, 1), loc='upper left', ncol=1)
-        if item>7:
-            leg=PKpeak.legend(loc='center left', bbox_to_anchor=(0.2, 0.7),ncol=2)
-        else:
-            leg=PKpeak.legend(loc='center left', bbox_to_anchor=(0.2, 0.7),ncol=1)
-    #    extent = PKpeak.get_window_extent().transformed(PKpeak.dpi_scale_trans.inverted())
-        PKpeak.savefig('PKpeaks.pdf', dpi=300, bbox_extra_artists=(leg,), transparent=True) 
-        #plt.savefig('PKpeaks.pdf')
-    
-    
-    #one tab per sample with peaks position, height and FWHM
-    for i in range(len(DATA)):
-        worksheet = workbook.add_worksheet(DATA[i][0])
-        summary=[["Position","FWHM","Intensity"]]+DATA[i][3]
-        for item in range(len(summary)):
-            for item0 in range(len(summary[item])):
-                worksheet.write(item,item0,summary[item][item0])
-    workbook.close()
-    plt.close()
-    
-    messagebox.showinfo("Information","The analysis is over")
-
-if __name__ == '__main__':    
-    XRDautoanalysis()
-    
-
-#%%
-#filename=file_path[0]
-#filetoread = open(filename,"r")
-#filerawdata = filetoread.readlines()
-#
-#x=[]
-#y=[]
-#
-##print(filerawdata[0].split(' '))
-#
-#for item in filerawdata:
-#    x.append(float(item.split(' ')[0]))
-#    y.append(float(item.split(' ')[1]))
-#
-#x=np.array(x)
-#y=np.array(y)
-#
-#indexes = peakutils.indexes(y, thres=threshold, min_dist=MinDist)
-#
-#dat=listofpeakinfo(x,y,indexes,"samplename")
-#print(dat)
-    
-    
-##find the peaks
-#indexes = peakutils.indexes(y, thres=0.05, min_dist=20)
-##print(x[indexes])
-#plt.figure(figsize=(10,6))
-#plt.plot(x,y,'black')
-##plt.scatter(x[indexes],y[indexes],c='red')
-##pplot(x, y, indexes)
-#
-##refine by interpolation
-#peaks_x = peakutils.interpolate(x, y, ind=indexes)
-##print(peaks_x)
-#
-##find and remove baseline
-##base = peakutils.baseline(y, 3) #(y, deg=intepolation degree, max_it=None, tol=None)
-##plt.figure(figsize=(10,6))
-##plt.plot(x, y-base)
-#
-##print(len(indexes))
-##find FWHM of particular peak, integrate area
-#indexofStudiedPeak=indexes[2]
-#nbofpoints=80#on each side of max position
-#
-#while(1):
-#    try:
-#        x0=x[indexofStudiedPeak-nbofpoints:indexofStudiedPeak+nbofpoints]
-#        y0=y[indexofStudiedPeak-nbofpoints:indexofStudiedPeak+nbofpoints]
-#
-#        #baseline height
-#        bhleft=np.mean(y0[:20])
-#        bhright=np.mean(y0[-20:])
-#        baselineheightatmaxpeak=(bhleft+bhright)/2
-#        
-#        if abs(bhleft-bhright)<30:#arbitrary choice of criteria...
-#        
-#            #find FWHM
-#            d=y0-((max(y0)-bhright)/2)
-#            ind=np.where(d>bhright)[0]
-#            
-#            hl=(x0[ind[0]-1]*y0[ind[0]]-y0[ind[0]-1]*x0[ind[0]])/(x0[ind[0]-1]-x0[ind[0]])
-#            ml=(y0[ind[0]-1]-hl)/x0[ind[0]-1]
-#            yfwhm=((max(y0)-baselineheightatmaxpeak)/2)+baselineheightatmaxpeak
-#            xleftfwhm=(yfwhm - hl)/ml
-#            #print(xleftfwhm)
-#            hr=(x0[ind[-1]]*y0[ind[-1]+1]-y0[ind[-1]]*x0[ind[-1]+1])/(x0[ind[-1]]-x0[ind[-1]+1])
-#            mr=(y0[ind[-1]]-hr)/x0[ind[-1]]
-#            xrightfwhm=(yfwhm - hr)/mr
-#            #print(xrightfwhm)
-#            
-#            FWHM=abs(xrightfwhm-xleftfwhm)
-#    #        print(FWHM)
-#            Peakheight=max(y0)-baselineheightatmaxpeak
-#    #        print(Peakheight)
-#            center=x[indexofStudiedPeak]
-#    #        print(center)
-#            
-#            plt.plot(x0, y0)
-#            plt.plot([x0[0],x0[-1]],[bhleft,bhright])
-#            plt.scatter(x0,y0)
-#            plt.scatter(x[indexofStudiedPeak],y[indexofStudiedPeak],c='red')
-#            plt.plot([xleftfwhm,xrightfwhm],[yfwhm,yfwhm])
-#            
-#            plt.text(center,max(y0)+200,str('%.1f' % float(center)),rotation=90,verticalalignment='bottom',horizontalalignment='center',multialignment='center')
-#    
-#    #        print(len(indexes))
-#            break
-#        else:
-#            if nbofpoints>=15:
-#                nbofpoints-=10
-#            else:
-#                print("indexerror unsolvable")
-#                break
-#    except IndexError:
-#        if nbofpoints>=15:
-#            nbofpoints-=10
-#        else:
-#            print("indexerror unsolvable")
-#            break
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    app = XRDApp()
+    app.mainloop()
 
 
