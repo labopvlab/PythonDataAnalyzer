@@ -696,7 +696,8 @@ class EQEApp(Toplevel):
                                      DATA[i]['integJsclist'][j+1]
                                      ])
         DATAFORGRAPH = DATAforgraph
-        print("It's done")
+        messagebox.showinfo("Information","It's done")
+#        print("It's done")
 #        self.initlistbox()
         
 #%%#############        
@@ -939,7 +940,7 @@ class EQEApp(Toplevel):
         self.db_conn.close()
         
         #exit window
-        print("it's in the DB!")
+#        print("it's in the DB!")
         messagebox.showinfo("Information","it's in the DB!")
         
 #%%#############         
@@ -1327,7 +1328,8 @@ class EQEApp(Toplevel):
             file.writelines("%s" % item for item in DATAforexport1)
             file.close() 
         except:
-            print("there is an exception...check legend maybe...")
+            messagebox.showinfo("Information","there is an exception...check legend maybe...")
+#            print("there is an exception...check legend maybe...")
              
     class PopulateListofSampleStylingEQE(tk.Frame):
         def __init__(self, root):
@@ -1605,7 +1607,7 @@ class EQEApp(Toplevel):
             integral = echarge/10*integrate.quad(x2,self.x0.get(),self.x1.get())[0]
             self.calculatedJ.set('%.2f' % integral)
         except ValueError:
-            messagebox.showinfo("", "a limit value is outside of interpolation range,\nmin: "+str(x[0])+", max: "+str(x[-1]))
+            messagebox.showinfo("Information", "a limit value is outside of interpolation range,\nmin: "+str(x[0])+", max: "+str(x[-1]))
     
     def SelectData(self):
         global DATAFORGRAPH

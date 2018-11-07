@@ -504,19 +504,24 @@ class IVApp(Toplevel):
                                 finished=1
                                 break
                             else:
-                                print("these are not IV related .xls files... try again")
+                                messagebox.showinfo("Information","these are not IV related .xls files... try again")
+#                                print("these are not IV related .xls files... try again")
                                 j+=1
                         else:
-                            print("several types of .xls files... try again")
+                            messagebox.showinfo("Information","several types of .xls files... try again")
+#                            print("several types of .xls files... try again")
                             j+=1
                     else:
-                        print("neither .iv or .xls IV files... try again")
+                        messagebox.showinfo("Information","neither .iv or .xls IV files... try again")
+#                        print("neither .iv or .xls IV files... try again")
                         j+=1
                 else:
-                    print("Multiple types of files... please choose one!")
+                    messagebox.showinfo("Information","Multiple types of files... please choose one!")
+#                    print("Multiple types of files... please choose one!")
                     j+=1
             else:
-                print("Please select IV files")
+                messagebox.showinfo("Information","Please select IV files")
+#                print("Please select IV files")
                 j+=1
             #except:
             #    print("no file selected")
@@ -1549,6 +1554,10 @@ class IVApp(Toplevel):
                 elif "Fixed voltage" in filerawdata[item0]:
                     filetype = 4
                     break
+                elif "Keithley 238" in filerawdata[item0]:
+                    filetype = 5
+                    break
+            
                                 
             if filetype ==1 or filetype==2: #J-V files and FRLOOP
                 partdict = {}
@@ -1867,6 +1876,169 @@ class IVApp(Toplevel):
                     fvpartdat[3].append(float(filerawdata[item].split("\t")[3]))
                 partdict["FVData"]=fvpartdat
                 DATAFV.append(partdict)
+                
+            elif filetype==5: #3sun files
+                partdict = {}
+                partdict["filepath"]=file_path[i]
+                partdict["MeasComment"]="-"
+                for item in range(len(filerawdata)):
+                    if "Measurement comment:" in filerawdata[item]:
+                        partdict["MeasComment"]=filerawdata[item][21:-1]
+                        break
+                for item in range(len(filerawdata)):
+                    if "Cell number:" in filerawdata[item]:
+                        partdict["CellNumber"]=float(filerawdata[item][23:-1])
+                        if partdict["CellNumber"]==1:
+                            partdict["Cellletter"]='A'
+                        elif partdict["CellNumber"]==2:
+                            partdict["Cellletter"]='B'
+                        elif partdict["CellNumber"]==3:
+                            partdict["Cellletter"]='C'
+                        else:
+                            partdict["Cellletter"]='Single'
+                        break
+                for item in range(len(filerawdata)):
+                    if "Deposition ID:" in filerawdata[item]:
+                        if filerawdata[item-1][19:-1]=='':
+                            partdict["SampleName"]=filerawdata[item][15:-1]+"_"+partdict["Cellletter"]
+                        else:
+                            partdict["SampleName"]=filerawdata[item][15:-1]+"_"+filerawdata[item-1][19:-1]+"_"+partdict["Cellletter"]
+                        partdict["DepID"]=filerawdata[item][15:-1]
+                        partdict["DepID"]=partdict["DepID"].replace("-","_")
+                        partdict["SampleName"]=partdict["SampleName"].replace("-","_")
+                        break
+                for item in range(len(filerawdata)):
+                    if "IV measurement time:" in filerawdata[item]:
+                        partdict["MeasDayTime"]=filerawdata[item][22:-1]
+                        break
+                for item in range(len(filerawdata)):
+                    if "Cell size [m2]:" in filerawdata[item]:
+                        partdict["CellSurface"]=float(filerawdata[item][17:-1])
+                        break
+                for item in range(len(filerawdata)):
+                    if "Voc [V]:" in filerawdata[item]:
+                        partdict["Voc"]=float(filerawdata[item][19:-1])*1000
+                        break            
+                for item in range(len(filerawdata)):
+                    if "Jsc [A/m2]:" in filerawdata[item]:
+                        partdict["Jsc"]=float(filerawdata[item][19:-1])*0.1
+                        break            
+                for item in range(len(filerawdata)):
+                    if "FF [.]:" in filerawdata[item]:
+                        partdict["FF"]=float(filerawdata[item][18:-1])*100
+                        break            
+                for item in range(len(filerawdata)):
+                    if "Efficiency [.]:" in filerawdata[item]:
+                        partdict["Eff"]=float(filerawdata[item][19:-1])*100
+                        break
+                for item in range(len(filerawdata)):
+                    if "Pmpp [W/m2]:" in filerawdata[item]:
+                        partdict["Pmpp"]=float(filerawdata[item][19:-1])
+                        break                
+                for item in range(len(filerawdata)):
+                    if "Vmpp [V]:" in filerawdata[item]:
+                        partdict["Vmpp"]=float(filerawdata[item][10:-1])*1000
+                        break                
+                for item in range(len(filerawdata)):
+                    if "Jmpp [A]:" in filerawdata[item]:
+                        partdict["Jmpp"]=float(filerawdata[item][10:-1])*0.1
+                        break   
+                for item in range(len(filerawdata)):
+                    if "Roc [Ohm.m2]:" in filerawdata[item]:
+                        partdict["Roc"]=float(filerawdata[item][15:-1])*10000
+                        break
+                for item in range(len(filerawdata)):
+                    if "Rsc [Ohm.m2]:" in filerawdata[item]:
+                        partdict["Rsc"]=float(filerawdata[item][15:-1])*10000
+                        break
+                partdict["VocFF"]=float(partdict["Voc"])*float(partdict["FF"])*0.01
+                partdict["RscJsc"]=float(partdict["Rsc"])*float(partdict["Jsc"])*0.001
+                for item in range(len(filerawdata)):
+                    if "Number of points:" in filerawdata[item]:
+                        partdict["NbPoints"]=float(filerawdata[item][17:-1])
+                        break
+                for item in range(len(filerawdata)):
+                    if "delay_iv (ms):" in filerawdata[item]:
+                        partdict["Delay"]=float(filerawdata[item][15:-1])
+                        break
+                for item in range(len(filerawdata)):
+                    if "Integration time [s]:" in filerawdata[item]:
+                        partdict["IntegTime"]=float(filerawdata[item][21:-1])
+                        break
+                for item in range(len(filerawdata)):
+                    if "Vstart" in filerawdata[item]:
+                        partdict["Vstart"]=float(filerawdata[item][15:-1])
+                        break
+                for item in range(len(filerawdata)):
+                    if "Vstop" in filerawdata[item]:
+                        partdict["Vend"]=float(filerawdata[item][14:-1])
+                        break
+                for item in range(len(filerawdata)):
+                    if "Illumination:" in filerawdata[item]:
+                        partdict["Illumination"]=filerawdata[item][14:-1]
+                        break
+                for item in range(len(filerawdata)):
+                    if "reverse/forward?" in filerawdata[item]:
+                        partdict["ScanDirection"]=filerawdata[item][21:-1]
+                        break
+#                if partdict["ScanDirection"] =="":
+#                    print(partdict["filepath"])
+#                    print(partdict["Vstart"])
+                print(partdict["filepath"])
+#                except:
+#                    print(partdict["filepath"])
+                if abs(float(partdict["Vstart"]))>abs(float(partdict["Vend"])):
+                    partdict["ScanDirection"]="Reverse"
+                else:
+                    partdict["ScanDirection"]="Forward"
+#                for item in range(len(filerawdata)):
+#                    if "Imax compliance [A]:" in filerawdata[item]:
+                partdict["ImaxComp"]=999
+#                        break
+#                for item in range(len(filerawdata)):
+#                    if "I sense range:" in filerawdata[item]:
+                partdict["Isenserange"]=999
+#                        break
+                for item in range(len(filerawdata)):
+                    if "User name:" in filerawdata[item]:
+                        partdict["Operator"]=filerawdata[item][11:-1]
+                        break
+                for item in range(len(filerawdata)):
+                    if "MEASURED IV DATA" in filerawdata[item]:
+                            pos=item+2
+                            break
+                    elif "MEASURED IV FRLOOP DATA" in filerawdata[item]:
+                            pos=item+2
+                            break
+                ivpartdat = [[],[]]#[voltage,current]
+                for item in range(pos,len(filerawdata),1):
+                    ivpartdat[0].append(float(filerawdata[item].split("\t")[2]))
+                    ivpartdat[1].append(0.1*float(filerawdata[item].split("\t")[3][:-1]))
+                partdict["IVData"]=ivpartdat
+                
+                partdict["Group"]="Default group"
+                partdict["Setup"]="TFIV"              
+                partdict["RefNomCurr"]=999
+                partdict["RefMeasCurr"]=999
+                partdict["AirTemp"]=999
+                partdict["ChuckTemp"]=999
+    
+                #still missing: test for transposition, mirror
+                try:
+                    if partdict["Illumination"]=="Light" and max(ivpartdat[0])>0.001*float(partdict["Voc"]):
+                        f = interp1d(ivpartdat[0], ivpartdat[1], kind='cubic')
+                        x2 = lambda x: f(x)
+                        partdict["AreaJV"] = integrate.quad(x2,0,0.001*float(partdict["Voc"]))[0]
+                    else:
+                        partdict["AreaJV"] =""
+                except ValueError:
+                    print("there is a ValueError on sample ",i)
+                
+                if partdict["Illumination"]=="Light":
+                    DATA.append(partdict)
+                else:
+                    DATAdark.append(partdict)
+                
             #self.bytes += self.bytestep
             #self.progress["value"] = self.bytes
         #change name of samples to have all different
@@ -4233,7 +4405,8 @@ class IVApp(Toplevel):
                 for item in selected_items:
                     self.treeview.delete(item)
             except IndexError:
-                print("you didn't select an element in the table")
+                messagebox.showinfo("Information","you didn't select an element in the table")
+#                print("you didn't select an element in the table")
 
         def insert_data(self, testdata):
             for item in testdata:
