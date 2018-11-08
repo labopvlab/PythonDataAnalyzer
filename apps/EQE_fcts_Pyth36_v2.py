@@ -11,6 +11,7 @@ from tkinter import filedialog
 from tkinter import *
 from pathlib import Path
 import numpy as np
+import copy
 import xlsxwriter
 import xlrd
 from scipy.interpolate import interp1d, UnivariateSpline
@@ -67,6 +68,7 @@ def center(win):
     win.deiconify()
 
 titEQE=0
+firstimport=1
 EQElegendMod=[]
 DATAFORGRAPH=[]
 DATAforexport=[]
@@ -348,7 +350,7 @@ class EQEApp(Toplevel):
     #%%###########        
     def GetEQEDATA(self):
         global DATAFORGRAPH
-        global colorstylelist
+        global colorstylelist,firstimport
         
         file_path = filedialog.askopenfilenames()
 #        print(file_path[0])
@@ -357,7 +359,7 @@ class EQEApp(Toplevel):
 #        print(os.path.basename(file_path[0].split('.')[0]))
 #        print("")
         integrationJscYes=0
-        MsgBox = messagebox.askquestion("IngegJsc?", "Do you want to calculate the Integrated Jsc curve?\nWarning: it will slow a bit down the importation")
+        MsgBox = messagebox.askquestion("IntegrJsc?", "Do you want to calculate the Integrated Jsc curve?\nWarning: it will slow a bit down the importation")
         if MsgBox == 'yes':
             integrationJscYes=1
         
@@ -371,9 +373,13 @@ class EQEApp(Toplevel):
         else :
             os.chdir(directory)
         
-       
-        DATA=[] # [{'Name':, 'Jsc':, 'Eg':, 'NbColumn':, 'DATA': [[wavelength],[eqe],[eqe]...]}]
-        AllNames = []
+        if firstimport:
+            DATA=[] # [{'Name':, 'Jsc':, 'Eg':, 'NbColumn':, 'DATA': [[wavelength],[eqe],[eqe]...]}]
+#            AllNames = []
+            firstimport=0
+        else:
+            DATA=copy.deepcopy(self.DATA)
+#            AllNames = []
         
         print(len(file_path))
         
@@ -393,7 +399,7 @@ class EQEApp(Toplevel):
                 print('Sample: %2f' % float(k+1))    
                 for j in range(len(sheet_names)):
                     if 'Sheet' not in sheet_names[j]:
-                        AllNames.append(sheet_names[j])
+#                        AllNames.append(sheet_names[j])
                         print(sheet_names[j])
                         xlsheet = wb.sheet_by_index(j)
                         cell1 = xlsheet.cell(0,0).value
@@ -541,6 +547,7 @@ class EQEApp(Toplevel):
                 samplename=file_path[k].replace('\\','/') 
                 samplename=samplename.split('/')[-1].replace('-','_').split('.')[0]
                 print(samplename)
+#                AllNames.append(samplename)
                 batchnumb=samplename.split('_')[0]
                 samplenumb=samplename.split('_')[1]
                 

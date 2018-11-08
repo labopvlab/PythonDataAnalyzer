@@ -1977,14 +1977,14 @@ class IVApp(Toplevel):
                     if "Illumination:" in filerawdata[item]:
                         partdict["Illumination"]=filerawdata[item][14:-1]
                         break
-                for item in range(len(filerawdata)):
-                    if "reverse/forward?" in filerawdata[item]:
-                        partdict["ScanDirection"]=filerawdata[item][21:-1]
-                        break
+#                for item in range(len(filerawdata)):
+#                    if "reverse/forward?" in filerawdata[item]:
+#                        partdict["ScanDirection"]=filerawdata[item][21:-1]
+#                        break
 #                if partdict["ScanDirection"] =="":
 #                    print(partdict["filepath"])
 #                    print(partdict["Vstart"])
-                print(partdict["filepath"])
+#                print(partdict["filepath"])
 #                except:
 #                    print(partdict["filepath"])
                 if abs(float(partdict["Vstart"]))>abs(float(partdict["Vend"])):
