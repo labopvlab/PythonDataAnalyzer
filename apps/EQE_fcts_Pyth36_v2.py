@@ -1316,10 +1316,10 @@ class EQEApp(Toplevel):
         try:
             if self.CheckLegend.get()==1:
                 f = filedialog.asksaveasfilename(defaultextension=".png", filetypes = (("graph file", "*.png"),("All Files", "*.*")))
-                self.fig1.savefig(f, dpi=300, bbox_extra_artists=(self.leg,), transparent=True) 
+                self.fig1.savefig(f, dpi=300, bbox_extra_artists=(self.leg,)) 
             else:
                 f = filedialog.asksaveasfilename(defaultextension=".png", filetypes = (("graph file", "*.png"),("All Files", "*.*")))
-                self.fig1.savefig(f, dpi=300, transparent=True)
+                self.fig1.savefig(f, dpi=300)#transparent=true
                     
             DATAforexport=map(list, six.moves.zip_longest(*DATAforexport, fillvalue=' '))
 
@@ -1632,7 +1632,7 @@ class EQEApp(Toplevel):
         self.names = ()
         self.names=self.SampleNames(DATAFORGRAPH)
               
-        self.lstbox = Listbox(frame, listvariable=valores, selectmode=MULTIPLE, yscrollcommand=scrollbar.set)
+        self.lstbox = Listbox(frame, listvariable=valores, selectmode=MULTIPLE, yscrollcommand=scrollbar.set, exportselection=0)
         self.lstbox.grid(column=0, row=1, columnspan=2)
         scrollbar.config(command=self.lstbox.yview)
         btn = Button(frame, text="Update", command=self.select)
