@@ -52,6 +52,7 @@ TODOLIST
 - group: modify the name of an existing group => automatically change in all samples
 - group: select which one to plot (so that we don't have to delete them)
 
+
 """
 #%%############# Global variable definition
 testdata = []
@@ -345,7 +346,7 @@ class IVApp(Toplevel):
         global testdata
         global DATA
         
-        self.frame0 = Frame(self.superframe,bg='black')
+        self.frame0 = Frame(self.superframe,bg='white')
         self.frame0.grid(row=48,column=35,rowspan=25,columnspan=65) #,sticky='wens'
         for r in range(25):
             self.frame0.rowconfigure(r, weight=1)    
@@ -364,8 +365,18 @@ class IVApp(Toplevel):
         self.Darktolight.grid(row=0, column=8, columnspan=1,rowspan=1)
         self.changeArea = Button(self.frame0, text="ChangeArea",command = self.changecellarea,fg='black')
         self.changeArea.grid(row=0, column=11, columnspan=1,rowspan=1)
+        self.deletetabelem = Button(self.frame0, text = "Delete table elements", command = self.deletedatatreeview)
+        self.deletetabelem.grid(row = 0, column = 1, columnspan=1)
+        self.plotfromtable = Button(self.frame0, text="Plot",command = self.plottingfromTable,fg='black')
+        self.plotfromtable.grid(row=0, column=9, columnspan=1,rowspan=1)
+        self.groupbutton = Button(self.frame0, text="Group",command = self.groupfromTable,fg='black')
+        self.groupbutton.grid(row=0, column=10, columnspan=1,rowspan=1)
+
+        self.frame01 = Frame(self.frame0,bg='black')
+        self.frame01.grid(row=1,column=0,rowspan=25,columnspan=65)
         
-        self.TableBuilder(self.frame0)
+        
+        self.TableBuilder()
         
         self.workongoing = tk.Label(self.superframe, text='ready', font=12, relief=tk.RIDGE, width=10)
         self.workongoing.grid(row=32, column=0,columnspan=8,rowspan=10)
@@ -431,7 +442,7 @@ class IVApp(Toplevel):
         self.read_bytes()
         
     def updateTable(self):
-        self.TableBuilder(self.frame0)
+        self.TableBuilder()
 
 #%%######################################################################
         
@@ -2086,11 +2097,11 @@ class IVApp(Toplevel):
             if self.CheckIVLegend.get()==1:
                 f = filedialog.asksaveasfilename(defaultextension=".png", filetypes = (("graph file", "*.png"),("All Files", "*.*")))
                 extent = self.IVsubfig.get_window_extent().transformed(self.fig.dpi_scale_trans.inverted())
-                self.fig.savefig(f, dpi=300, bbox_inches=extent.expanded(3, 1.4),bbox_extra_artists=(self.leg,), transparent=True) 
+                self.fig.savefig(f, dpi=300, bbox_inches=extent.expanded(3, 1.4),bbox_extra_artists=(self.leg,))#, transparent=True) 
             else:
                 f = filedialog.asksaveasfilename(defaultextension=".png", filetypes = (("graph file", "*.png"),("All Files", "*.*")))
                 extent = self.IVsubfig.get_window_extent().transformed(self.fig.dpi_scale_trans.inverted())
-                self.fig.savefig(f, dpi=300, bbox_inches=extent.expanded(3, 1.4), transparent=True) 
+                self.fig.savefig(f, dpi=300, bbox_inches=extent.expanded(3, 1.4))#, transparent=True) 
 
             DATAJVforexport1=[]
             for item in DATAJVforexport:
@@ -2125,11 +2136,11 @@ class IVApp(Toplevel):
             if self.CheckmppLegend.get()==1:
                 f = filedialog.asksaveasfilename(defaultextension=".png", filetypes = (("graph file", "*.png"),("All Files", "*.*")))
                 extent = self.mppsubfig.get_window_extent().transformed(self.fig.dpi_scale_trans.inverted())
-                self.fig.savefig(f, dpi=300, bbox_inches=extent.expanded(3, 1.4),bbox_extra_artists=(self.leg,), transparent=True)
+                self.fig.savefig(f, dpi=300, bbox_inches=extent.expanded(3, 1.4),bbox_extra_artists=(self.leg,))#, transparent=True)
             else:
                 f = filedialog.asksaveasfilename(defaultextension=".png", filetypes = (("graph file", "*.png"),("All Files", "*.*")))
                 extent = self.mppsubfig.get_window_extent().transformed(self.fig.dpi_scale_trans.inverted())
-                self.fig.savefig(f, dpi=300, bbox_inches=extent.expanded(3, 1.4), transparent=True)
+                self.fig.savefig(f, dpi=300, bbox_inches=extent.expanded(3, 1.4))#, transparent=True)
                 
             DATAmppforexport1=[]            
             for item in DATAmppforexport:
@@ -2152,7 +2163,7 @@ class IVApp(Toplevel):
             if self.Big4.get()==0:
                 f = filedialog.asksaveasfilename(defaultextension=".png", filetypes = (("graph file", "*.png"),("All Files", "*.*")))
                 extent = self.GroupStatfig.get_window_extent().transformed(self.fig.dpi_scale_trans.inverted())
-                self.fig.savefig(f, dpi=300, bbox_inches=extent.expanded(1.5, 2), transparent=True)
+                self.fig.savefig(f, dpi=300, bbox_inches=extent.expanded(1.5, 2))#, transparent=True)
                 
                 DATAgroupforexport1=[]            
                 for item in DATAgroupforexport:
@@ -2171,7 +2182,7 @@ class IVApp(Toplevel):
                 self.GroupChoice.set("Eff")
                 self.UpdateGroupGraph(1)
                 extent = self.GroupStatfig.get_window_extent().transformed(self.fig.dpi_scale_trans.inverted())
-                self.fig.savefig(f[:-4]+"_"+self.GroupChoice.get()+f[-4:], dpi=300, bbox_inches=extent.expanded(1.5, 1.5), transparent=True)
+                self.fig.savefig(f[:-4]+"_"+self.GroupChoice.get()+f[-4:], dpi=300, bbox_inches=extent.expanded(1.5, 1.5))#, transparent=True)
                 
                 DATAgroupforexport1=[]            
                 for item in DATAgroupforexport:
@@ -2188,7 +2199,7 @@ class IVApp(Toplevel):
                 self.UpdateGroupGraph(1)
                 
                 extent = self.GroupStatfig.get_window_extent().transformed(self.fig.dpi_scale_trans.inverted())
-                self.fig.savefig(f[:-4]+"_"+self.GroupChoice.get()+f[-4:], dpi=300, bbox_inches=extent.expanded(1.5, 1.5), transparent=True)
+                self.fig.savefig(f[:-4]+"_"+self.GroupChoice.get()+f[-4:], dpi=300, bbox_inches=extent.expanded(1.5, 1.5))#, transparent=True)
                 
                 DATAgroupforexport1=[]            
                 for item in DATAgroupforexport:
@@ -2205,7 +2216,7 @@ class IVApp(Toplevel):
                 self.UpdateGroupGraph(1)
                 
                 extent = self.GroupStatfig.get_window_extent().transformed(self.fig.dpi_scale_trans.inverted())
-                self.fig.savefig(f[:-4]+"_"+self.GroupChoice.get()+f[-4:], dpi=300, bbox_inches=extent.expanded(1.5, 1.5), transparent=True)
+                self.fig.savefig(f[:-4]+"_"+self.GroupChoice.get()+f[-4:], dpi=300, bbox_inches=extent.expanded(1.5, 1.5))#, transparent=True)
                 
                 DATAgroupforexport1=[]            
                 for item in DATAgroupforexport:
@@ -2222,7 +2233,7 @@ class IVApp(Toplevel):
                 self.UpdateGroupGraph(1)
                 
                 extent = self.GroupStatfig.get_window_extent().transformed(self.fig.dpi_scale_trans.inverted())
-                self.fig.savefig(f[:-4]+"_"+self.GroupChoice.get()+f[-4:], dpi=300, bbox_inches=extent.expanded(1.5, 1.5), transparent=True)
+                self.fig.savefig(f[:-4]+"_"+self.GroupChoice.get()+f[-4:], dpi=300, bbox_inches=extent.expanded(1.5, 1.5))#, transparent=True)
                 
                 DATAgroupforexport1=[]            
                 for item in DATAgroupforexport:
@@ -3795,6 +3806,7 @@ class IVApp(Toplevel):
         print("loaded")
         if DATA!=[]:
             self.UpdateIVGraph()
+            self.UpdateGroupGraph(1)
             self.updateTable()
             
         if DATAMPP!=[]:
@@ -4343,265 +4355,260 @@ class IVApp(Toplevel):
         self.window.destroy()
         self.updateTable()
         self.UpdateIVGraph()
+        self.UpdateGroupGraph(1)
         
 #########################################################
 #########################################################        
            
-    class TableBuilder(Frame):
-        def __init__(self, parent):
-            Frame.__init__(self, parent)
-            self.parent=parent
-            self.initialize_user_interface()
     
-        def initialize_user_interface(self):
-            global DATA
-            global testdata
-            testdata=[]
-            #self.parent.grid_rowconfigure(0,weight=1)
-            #self.parent.grid_columnconfigure(0,weight=1)
-            self.parent.config(background="white")
-                      
-            for item in range(len(DATA)):
-                testdata.append([DATA[item]["Group"],DATA[item]["SampleName"],float('%.2f' % float(DATA[item]["CellSurface"])),DATA[item]["ScanDirection"],float('%.2f' % float(DATA[item]["Jsc"])),float('%.2f' % float(DATA[item]["Voc"])),float('%.2f' % float(DATA[item]["FF"])),float('%.2f' % float(DATA[item]["Eff"])),float('%.2f' % float(DATA[item]["Roc"])),float('%.2f' % float(DATA[item]["Rsc"])),float('%.2f' % float(DATA[item]["Vmpp"])),float('%.2f' % float(DATA[item]["Jmpp"]))])
-                
-            self.tableheaders=('Group','Sample','Area','Scan direct.','Jsc','Voc','FF','Eff.','Roc','Rsc','Vmpp','Jmpp')
-                        
-            # Set the treeview
-            self.tree = Treeview( self.parent, columns=self.tableheaders, show="headings")
+    def TableBuilder(self):
+        global DATA
+        global testdata
+        testdata=[]
+        #self.parent.grid_rowconfigure(0,weight=1)
+        #self.parent.grid_columnconfigure(0,weight=1)
+        self.frame01.config(background="white")
+                  
+        for item in range(len(DATA)):
+            testdata.append([DATA[item]["Group"],DATA[item]["SampleName"],float('%.2f' % float(DATA[item]["CellSurface"])),DATA[item]["ScanDirection"],float('%.2f' % float(DATA[item]["Jsc"])),float('%.2f' % float(DATA[item]["Voc"])),float('%.2f' % float(DATA[item]["FF"])),float('%.2f' % float(DATA[item]["Eff"])),float('%.2f' % float(DATA[item]["Roc"])),float('%.2f' % float(DATA[item]["Rsc"])),float('%.2f' % float(DATA[item]["Vmpp"])),float('%.2f' % float(DATA[item]["Jmpp"]))])
             
-            for col in self.tableheaders:
-                self.tree.heading(col, text=col.title(), command=lambda c=col: self.sortby(self.tree, c, 0))
-                #self.tree.column(col,stretch=tkinter.YES)
-                self.tree.column(col, width=int(round(1.3*tkFont.Font().measure(col.title()))), anchor='n')   
-                #print(int(round(1.2*tkFont.Font().measure(col.title()))))
-            
-            self.deletetabelem = Button(self.parent, text = "Delete table elements", command = self.deletedatatreeview)
-            self.deletetabelem.grid(row = 0, column = 1, columnspan=1)
-            self.plotfromtable = Button(self.parent, text="Plot",command = self.plottingfromTable,fg='black')
-            self.plotfromtable.grid(row=0, column=9, columnspan=1,rowspan=1)
-            self.groupbutton = Button(self.parent, text="Group",command = self.groupfromTable,fg='black')
-            self.groupbutton.grid(row=0, column=10, columnspan=1,rowspan=1)
-            
-            vsb = Scrollbar(orient="vertical", command=self.tree.yview)
-            #hsb = ttk.Scrollbar(orient="horizontal",command=self.tree.xview)
-            self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=())
-            self.tree.grid(row=1,column=0, columnspan=15,rowspan=10, sticky='nsew', in_=self.parent)
-            #vsb.grid(column=11, row=1,rowspan=10, sticky='ns', in_=self.parent)
-            #hsb.grid(column=0, row=11, sticky='ew', in_=self.parent)
-            self.treeview = self.tree
-            
-            self.insert_data(testdata)
+        self.tableheaders=('Group','Sample','Area','Scan direct.','Jsc','Voc','FF','Eff.','Roc','Rsc','Vmpp','Jmpp')
+                    
+        # Set the treeview
+        self.tree = Treeview( self.frame01, columns=self.tableheaders, show="headings")
         
-        def deletedatatreeview(self):
-            global DATA
-            try:
-                for j in range(len(self.treeview.selection())):
-                    selected_item = self.treeview.selection()[j] ## get selected item
-                    for i in range(len(DATA)):
-                        if DATA[i]["SampleName"]==self.treeview.item(selected_item)["values"][1]:
-                            DATA.pop(i)
-                            break
-                selected_items = self.treeview.selection()
-                for item in selected_items:
-                    self.treeview.delete(item)
-            except IndexError:
-                messagebox.showinfo("Information","you didn't select an element in the table")
+        for col in self.tableheaders:
+            self.tree.heading(col, text=col.title(), command=lambda c=col: self.sortby(self.tree, c, 0))
+            #self.tree.column(col,stretch=tkinter.YES)
+            self.tree.column(col, width=int(round(1.3*tkFont.Font().measure(col.title()))), anchor='n')   
+            #print(int(round(1.2*tkFont.Font().measure(col.title()))))
+        
+        vsb = Scrollbar(orient="vertical", command=self.tree.yview)
+        #hsb = ttk.Scrollbar(orient="horizontal",command=self.tree.xview)
+        self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=())
+        self.tree.grid(row=1,column=0, columnspan=15,rowspan=10, sticky='nsew', in_=self.frame01)
+        #vsb.grid(column=11, row=1,rowspan=10, sticky='ns', in_=self.parent)
+        #hsb.grid(column=0, row=11, sticky='ew', in_=self.parent)
+        self.treeview = self.tree
+        
+        self.insert_data(testdata)
+    
+    def deletedatatreeview(self):
+        global DATA
+        try:
+            for j in range(len(self.treeview.selection())):
+                selected_item = self.treeview.selection()[j] ## get selected item
+                for i in range(len(DATA)):
+                    if DATA[i]["SampleName"]==self.treeview.item(selected_item)["values"][1]:
+                        DATA.pop(i)
+                        break
+            selected_items = self.treeview.selection()
+            for item in selected_items:
+                self.treeview.delete(item)
+            self.UpdateGroupGraph(1)
+        except IndexError:
+            messagebox.showinfo("Information","you didn't select an element in the table")
 #                print("you didn't select an element in the table")
 
-        def insert_data(self, testdata):
-            for item in testdata:
-                self.treeview.insert('', 'end', values=item)
-                
-                #for ix, val in enumerate(item):
-                #    col_w = tkFont.Font().measure(val)
-                #    if tkFont.Font().measure(self.tableheaders[ix].title())<col_w:
-                #        self.tree.column(self.tableheaders[ix], width=col_w)
-                
-        def sortby(self, tree, col, descending):
-            data = [(tree.set(child, col), child) for child in tree.get_children('')]
-            try:
-                data.sort(key=lambda t: float(t[0]), reverse=descending)
-            except ValueError:
-                data.sort(reverse=descending)
-            for ix, item in enumerate(data):
-                tree.move(item[1], '', ix)
-            # switch the heading so it will sort in the opposite direction
-            tree.heading(col,text=col.capitalize(), command=lambda _col_=col: self.sortby(tree, _col_, int(not descending)))
+    def insert_data(self, testdata):
+        for item in testdata:
+            self.treeview.insert('', 'end', values=item)
+            
+            #for ix, val in enumerate(item):
+            #    col_w = tkFont.Font().measure(val)
+            #    if tkFont.Font().measure(self.tableheaders[ix].title())<col_w:
+            #        self.tree.column(self.tableheaders[ix], width=col_w)
+            
+    def sortby(self, tree, col, descending):
+        data = [(tree.set(child, col), child) for child in tree.get_children('')]
+        try:
+            data.sort(key=lambda t: float(t[0]), reverse=descending)
+        except ValueError:
+            data.sort(reverse=descending)
+        for ix, item in enumerate(data):
+            tree.move(item[1], '', ix)
+        # switch the heading so it will sort in the opposite direction
+        tree.heading(col,text=col.capitalize(), command=lambda _col_=col: self.sortby(tree, _col_, int(not descending)))
+    
+    def plottingfromTable(self):
+        global takenforplot
         
-        def plottingfromTable(self):
-            global takenforplot
-            
-            totake=self.treeview.selection()
-            takenforplot=[str(self.treeview.item(item)["values"][1]) for item in totake]
-            
-        def groupfromTable(self):
-            global samplesgroups
-            
-            self.window = tk.Toplevel()
-            self.window.wm_title("Group samples")
-            center(self.window)
-            self.window.geometry("580x120")
-             
-            label=tk.Label(self.window,text="                ")
-            label.grid(row=0,column=0, columnspan=8)
-            label=tk.Label(self.window,text="  ")
-            label.grid(row=0,column=0, rowspan=8)
-            
-            self.groupupdate = Button(self.window, text="new group",
-                                command = self.validategroup)
-            self.groupupdate.grid(row=1, column=1, columnspan=3)
-            
-            self.newgroup = tk.StringVar()
-            self.newgroup.set(samplesgroups[0])
-            entry=Entry(self.window, textvariable=self.newgroup,width=13)
-            entry.grid(row=2,column=1,columnspan=3)
-            
-            label=tk.Label(self.window,text="      or      ")
-            label.grid(row=1,column=5, columnspan=1)
-            
-            self.groupupdate = Button(self.window, text="existing group",
-                                command = self.validategroup)
-            self.groupupdate.grid(row=1, column=6, columnspan=3)
-            
-            self.groupchoice=tk.StringVar()
-            self.groupchoice.set(samplesgroups[0]) # default choice
-            self.dropgroupchoice=OptionMenu(self.window, self.groupchoice, *samplesgroups, command=())
-            self.dropgroupchoice.grid(row=2, column=6, columnspan=3)
-            
-            label=tk.Label(self.window,text="      or      ")
-            label.grid(row=1,column=9, columnspan=1)
-            
-            self.groupdel = Button(self.window, text="delete group",
-                                command = self.deletegroup)
-            self.groupdel.grid(row=1, column=10, columnspan=3)
-            
-            self.groupdellist=tk.StringVar()
-            self.groupdellist.set(samplesgroups[0]) # default choice
-            self.dropgroupchoice=OptionMenu(self.window, self.groupdellist, *samplesgroups, command=())
-            self.dropgroupchoice.grid(row=2, column=10, columnspan=3)
-            
-            label=tk.Label(self.window,text="      or      ")
-            label.grid(row=1,column=15, columnspan=1)
-            
-            self.groupOrder = Button(self.window, text="reorder group",
-                                command = self.reordergroup)
-            self.groupOrder.grid(row=1, column=20, columnspan=3)
+        totake=self.treeview.selection()
+        takenforplot=[str(self.treeview.item(item)["values"][1]) for item in totake]
         
-        class Drag_and_Drop_Listbox(tk.Listbox):
-            #A tk listbox with drag'n'drop reordering of entries.
-            def __init__(self, master, **kw):
-                #kw['selectmode'] = tk.MULTIPLE
-                kw['selectmode'] = tk.SINGLE
-                kw['activestyle'] = 'none'
-                tk.Listbox.__init__(self, master, kw)
-                self.bind('<Button-1>', self.getState, add='+')
-                self.bind('<Button-1>', self.setCurrent, add='+')
-                self.bind('<B1-Motion>', self.shiftSelection)
-                self.curIndex = None
-                self.curState = None
-            def setCurrent(self, event):
-                ''' gets the current index of the clicked item in the listbox '''
-                self.curIndex = self.nearest(event.y)
-            def getState(self, event):
-                ''' checks if the clicked item in listbox is selected '''
-                #i = self.nearest(event.y)
-                #self.curState = self.selection_includes(i)
-                self.curState = 1
-            def shiftSelection(self, event):
-                ''' shifts item up or down in listbox '''
-                i = self.nearest(event.y)
-                if self.curState == 1:
-                  self.selection_set(self.curIndex)
-                else:
-                  self.selection_clear(self.curIndex)
-                if i < self.curIndex:
-                  # Moves up
-                  x = self.get(i)
-                  selected = self.selection_includes(i)
-                  self.delete(i)
-                  self.insert(i+1, x)
-                  if selected:
-                    self.selection_set(i+1)
-                  self.curIndex = i
-                elif i > self.curIndex:
-                  # Moves down
-                  x = self.get(i)
-                  selected = self.selection_includes(i)
-                  self.delete(i)
-                  self.insert(i-1, x)
-                  if selected:
-                    self.selection_set(i-1)
-                  self.curIndex = i
+        self.UpdateIVGraph()
         
-        def reordergroup(self):
-            global samplesgroups
-            
-            self.reorderwindow = tk.Tk()
-            center(self.reorderwindow)
-            self.listbox = self.Drag_and_Drop_Listbox(self.reorderwindow)
-            for name in range(1,len(samplesgroups)):
-              self.listbox.insert(tk.END, samplesgroups[name])
-              self.listbox.selection_set(0)
-            self.listbox.pack(fill=tk.BOTH, expand=True)
-            scrollbar = tk.Scrollbar(self.listbox, orient="vertical")
-            scrollbar.config(command=self.listbox.yview)
-            scrollbar.pack(side="right", fill="y")
-            
-            self.listbox.config(yscrollcommand=scrollbar.set)
-            
-            printbut = tk.Button(self.reorderwindow, text="reorder",
-                                        command = self.printlist)
-            printbut.pack()
-            self.reorderwindow.mainloop()    
-            
-            #print(samplesgroups)
-            
-        def printlist(self):
-            global samplesgroups
-            samplesgroups=list(self.listbox.get(0,tk.END))
-            samplesgroups=["Default group"]+ samplesgroups
-            #self.UpdateIVLegMod()
-            self.reorderwindow.destroy()
-            self.window.destroy()
-            #self.groupfromTable()
+    def groupfromTable(self):
+        global samplesgroups
         
-        def validategroup(self):
-            global takenforplot
-            global samplesgroups
-            global DATA
-            
-            totake=self.treeview.selection()
-            takenforplot=[str(self.treeview.item(item)["values"][1]) for item in totake]
+        self.window = tk.Toplevel()
+        self.window.wm_title("Group samples")
+        center(self.window)
+        self.window.geometry("580x120")
+         
+        label=tk.Label(self.window,text="                ")
+        label.grid(row=0,column=0, columnspan=8)
+        label=tk.Label(self.window,text="  ")
+        label.grid(row=0,column=0, rowspan=8)
+        
+        self.groupupdate = Button(self.window, text="new group",
+                            command = self.validategroup)
+        self.groupupdate.grid(row=1, column=1, columnspan=3)
+        
+        self.newgroup = tk.StringVar()
+        self.newgroup.set(samplesgroups[0])
+        entry=Entry(self.window, textvariable=self.newgroup,width=13)
+        entry.grid(row=2,column=1,columnspan=3)
+        
+        label=tk.Label(self.window,text="      or      ")
+        label.grid(row=1,column=5, columnspan=1)
+        
+        self.groupupdate = Button(self.window, text="existing group",
+                            command = self.validategroup)
+        self.groupupdate.grid(row=1, column=6, columnspan=3)
+        
+        self.groupchoice=tk.StringVar()
+        self.groupchoice.set(samplesgroups[0]) # default choice
+        self.dropgroupchoice=OptionMenu(self.window, self.groupchoice, *samplesgroups, command=())
+        self.dropgroupchoice.grid(row=2, column=6, columnspan=3)
+        
+        label=tk.Label(self.window,text="      or      ")
+        label.grid(row=1,column=9, columnspan=1)
+        
+        self.groupdel = Button(self.window, text="delete group",
+                            command = self.deletegroup)
+        self.groupdel.grid(row=1, column=10, columnspan=3)
+        
+        self.groupdellist=tk.StringVar()
+        self.groupdellist.set(samplesgroups[0]) # default choice
+        self.dropgroupchoice=OptionMenu(self.window, self.groupdellist, *samplesgroups, command=())
+        self.dropgroupchoice.grid(row=2, column=10, columnspan=3)
+        
+        label=tk.Label(self.window,text="      or      ")
+        label.grid(row=1,column=15, columnspan=1)
+        
+        self.groupOrder = Button(self.window, text="reorder group",
+                            command = self.reordergroup)
+        self.groupOrder.grid(row=1, column=20, columnspan=3)
+    
+    class Drag_and_Drop_Listbox2(tk.Listbox):
+        #A tk listbox with drag'n'drop reordering of entries.
+        def __init__(self, master, **kw):
+            #kw['selectmode'] = tk.MULTIPLE
+            kw['selectmode'] = tk.SINGLE
+            kw['activestyle'] = 'none'
+            tk.Listbox.__init__(self, master, kw)
+            self.bind('<Button-1>', self.getState, add='+')
+            self.bind('<Button-1>', self.setCurrent, add='+')
+            self.bind('<B1-Motion>', self.shiftSelection)
+            self.curIndex = None
+            self.curState = None
+        def setCurrent(self, event):
+            ''' gets the current index of the clicked item in the listbox '''
+            self.curIndex = self.nearest(event.y)
+        def getState(self, event):
+            ''' checks if the clicked item in listbox is selected '''
+            #i = self.nearest(event.y)
+            #self.curState = self.selection_includes(i)
+            self.curState = 1
+        def shiftSelection(self, event):
+            ''' shifts item up or down in listbox '''
+            i = self.nearest(event.y)
+            if self.curState == 1:
+              self.selection_set(self.curIndex)
+            else:
+              self.selection_clear(self.curIndex)
+            if i < self.curIndex:
+              # Moves up
+              x = self.get(i)
+              selected = self.selection_includes(i)
+              self.delete(i)
+              self.insert(i+1, x)
+              if selected:
+                self.selection_set(i+1)
+              self.curIndex = i
+            elif i > self.curIndex:
+              # Moves down
+              x = self.get(i)
+              selected = self.selection_includes(i)
+              self.delete(i)
+              self.insert(i-1, x)
+              if selected:
+                self.selection_set(i-1)
+              self.curIndex = i
+    
+    def reordergroup(self):
+        global samplesgroups
+        
+        self.reorderwindow = tk.Tk()
+        center(self.reorderwindow)
+        self.listbox = self.Drag_and_Drop_Listbox2(self.reorderwindow)
+        for name in range(1,len(samplesgroups)):
+          self.listbox.insert(tk.END, samplesgroups[name])
+          self.listbox.selection_set(0)
+        self.listbox.pack(fill=tk.BOTH, expand=True)
+        scrollbar = tk.Scrollbar(self.listbox, orient="vertical")
+        scrollbar.config(command=self.listbox.yview)
+        scrollbar.pack(side="right", fill="y")
+        
+        self.listbox.config(yscrollcommand=scrollbar.set)
+        
+        printbut = tk.Button(self.reorderwindow, text="reorder",
+                                    command = self.printlist2)
+        printbut.pack()
+        self.reorderwindow.mainloop()    
+        
+        #print(samplesgroups)
+        
+    def printlist2(self):
+        global samplesgroups
+        samplesgroups=list(self.listbox.get(0,tk.END))
+        samplesgroups=["Default group"]+ samplesgroups
+        #self.UpdateIVLegMod()
+        self.reorderwindow.destroy()
+        self.window.destroy()
+        self.UpdateGroupGraph(1)
+        #self.groupfromTable()
+    
+    def validategroup(self):
+        global takenforplot
+        global samplesgroups
+        global DATA
+        
+        totake=self.treeview.selection()
+        takenforplot=[str(self.treeview.item(item)["values"][1]) for item in totake]
 
-            if self.newgroup.get() != samplesgroups[0] and totake!=():
-                if self.newgroup.get() not in samplesgroups:
-                    samplesgroups.append(self.newgroup.get())
-                for item in range(len(takenforplot)):
-                    for item1 in range(len(DATA)):
-                        if takenforplot[item]==DATA[item1]["SampleName"]:
-                            DATA[item1]["Group"]=self.newgroup.get()
-                            break
-            elif totake!=():
-                for item in range(len(takenforplot)):
-                    for item1 in range(len(DATA)):
-                        if takenforplot[item]==DATA[item1]["SampleName"]:
-                            DATA[item1]["Group"]=self.groupchoice.get()
-                            break
-            self.initialize_user_interface()
-            self.window.destroy()
-            
-        def deletegroup(self):
-            global samplesgroups
-            global DATA
-            
-            if self.groupdellist.get()!="Default group":
-                while self.groupdellist.get() in samplesgroups: samplesgroups.remove(self.groupdellist.get()) 
-            
-            for i in range(len(DATA)):
-                if DATA[i]["Group"]==self.groupdellist.get():
-                    DATA[i]["Group"]="Default group"
-            self.initialize_user_interface()
-            self.window.destroy()
+        if self.newgroup.get() != samplesgroups[0] and totake!=():
+            if self.newgroup.get() not in samplesgroups:
+                samplesgroups.append(self.newgroup.get())
+            for item in range(len(takenforplot)):
+                for item1 in range(len(DATA)):
+                    if takenforplot[item]==DATA[item1]["SampleName"]:
+                        DATA[item1]["Group"]=self.newgroup.get()
+                        break
+        elif totake!=():
+            for item in range(len(takenforplot)):
+                for item1 in range(len(DATA)):
+                    if takenforplot[item]==DATA[item1]["SampleName"]:
+                        DATA[item1]["Group"]=self.groupchoice.get()
+                        break
+        self.TableBuilder()
+        self.UpdateGroupGraph(1)
+        self.window.destroy()
+        
+    def deletegroup(self):
+        global samplesgroups
+        global DATA
+        
+        if self.groupdellist.get()!="Default group":
+            while self.groupdellist.get() in samplesgroups: samplesgroups.remove(self.groupdellist.get()) 
+        
+        for i in range(len(DATA)):
+            if DATA[i]["Group"]==self.groupdellist.get():
+                DATA[i]["Group"]="Default group"
+        self.TableBuilder()
+        self.UpdateGroupGraph(1)
+        self.window.destroy()
         
     def SampleMppNames(self, DATAx):
         Names = list(self.mppnames)
