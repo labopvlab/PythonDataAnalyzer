@@ -18,15 +18,6 @@ from matplotlib import colors as mcolors
 
 
 """"
-- align xrd data with reference to one particular peak: 
-        detect peaks => get selectable list of peaks => reasign one peak to user-defined value
-- extract peak positions and intensities
-        user defined threshold and min_dist for peak finding
-- database of xrd data for typical materials
-        can compare the data to this database by superposing the graphs
-        automatic finding: compares the peak positions and propose a material which has correspondances
-
-- add option to choose the format of the exported graphs: .pdf, .png, .tiff...
 
 """
 

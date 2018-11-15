@@ -133,7 +133,7 @@ class TheAnalyser(Frame):
         xrdauto.XRDautoanalysis()
     
     def callXRD(self):
-        messagebox.showinfo("Information","XRD pattern analysis - coming soon")
+        xrd.XRDApp()
         
 root = Tk()
 background_image=ImageTk.PhotoImage(file=os.path.join(os.path.dirname(os.path.abspath(__file__)),'images','background2.png'))
