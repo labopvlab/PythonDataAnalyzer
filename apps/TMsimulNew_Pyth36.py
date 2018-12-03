@@ -15,6 +15,9 @@ still to be added:
     - refractive index in device for specific wavelength
     - E field in device
     - modifiable IQE
+    
+- when simulation is done, opens a toplevel window with the plot, with toolbar to rescale and save differently
+
 
 """
 #%%

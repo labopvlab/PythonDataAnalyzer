@@ -64,15 +64,13 @@ def listofpeakinfo(x,y,indexes,samplename):#x and y are np.arrays
                     FWHM=abs(xrightfwhm-xleftfwhm)
                     Peakheight=max(y0)-baselineheightatmaxpeak
                     center=x[indexes[item]]
-                    
-                    
+                                 
                     plt.plot(x0, y0, 'red')
                     plt.plot([x0[0],x0[-1]],[bhleft,bhright],'blue')
 #                    plt.plot(x0,y0,ms=0)
                     plt.plot([xleftfwhm,xrightfwhm],[yfwhm,yfwhm],'green')
                     plt.text(center,max(y0)+200,str('%.1f' % float(center)),rotation=90,verticalalignment='bottom',horizontalalignment='center',multialignment='center')
-                   
-                    
+                                      
                     peakdata.append([center,FWHM,Peakheight])
                     break
                 else:

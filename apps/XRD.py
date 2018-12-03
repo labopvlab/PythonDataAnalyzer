@@ -36,12 +36,6 @@ TODOLIST
 
 - show peak fitting
 
-- change peak names and show on graph next to their peak
-
-- listing of selected ref patterns
-
-- exporting
-
 """
 #%%
 LARGE_FONT= ("Verdana", 12)
@@ -59,7 +53,7 @@ def center(win):
     win.geometry('{}x{}+{}+{}'.format(width, height, x, y))
     win.deiconify()
 
-DATA={}# {"name":[[x original...],[y original...],[x corrected...],[y corrected...],[{"Position":1,"PeakName":'(005)',"Intensity":1,"FWHM":1},...]],"name2":[]}
+DATA={}# {"name":[[x original...],[y original...],[x corrected...],[y corrected...],[{"Position":1,"PeakName":'(005)',"Intensity":1,"FWHM":1},...], [[[x0],[y0]],[[x0],[y0]],...],[[x0,x1,y0,y1],[x0,x1,y0,y1]...],[[x0,x1,y0,y1],[x0,x1,y0,y1]...]],"name2":[]}
 
 colorstylelist = ['black', 'red', 'blue', 'brown', 'green','cyan','magenta','olive','navy','orange','gray','aliceblue','antiquewhite','aqua','aquamarine','azure','beige','bisque','blanchedalmond','blue','blueviolet','brown','burlywood','cadetblue','chartreuse','chocolate','coral','cornflowerblue','cornsilk','crimson','darkblue','darkcyan','darkgoldenrod','darkgray','darkgreen','darkkhaki','darkmagenta','darkolivegreen','darkorange','darkorchid','darkred','darksalmon','darkseagreen','darkslateblue','darkslategray','darkturquoise','darkviolet','deeppink','deepskyblue','dimgray','dodgerblue','firebrick','floralwhite','forestgreen','fuchsia','gainsboro','ghostwhite','gold','goldenrod','greenyellow','honeydew','hotpink','indianred','indigo','ivory','khaki','lavender','lavenderblush','lawngreen','lemonchiffon','lightblue','lightcoral','lightcyan','lightgoldenrodyellow','lightgreen','lightgray','lightpink','lightsalmon','lightseagreen','lightskyblue','lightslategray','lightsteelblue','lightyellow','lime','limegreen','linen','magenta','maroon','mediumaquamarine','mediumblue','mediumorchid','mediumpurple','mediumseagreen','mediumslateblue','mediumspringgreen','mediumturquoise','mediumvioletred','midnightblue','mintcream','mistyrose','moccasin','navajowhite','navy','oldlace','olive','olivedrab','orange','orangered','orchid','palegoldenrod','palegreen','paleturquoise','palevioletred','papayawhip','peachpuff','peru','pink','plum','powderblue','purple','red','rosybrown','royalblue','saddlebrown','salmon','sandybrown','seagreen','seashell','sienna','silver','skyblue','slateblue','slategray','snow','springgreen','steelblue','tan','teal','thistle','tomato','turquoise','violet','wheat','white','whitesmoke','yellow','yellowgreen']
 owd = os.getcwd()
@@ -75,19 +69,27 @@ for item in reflist:
 RefPattDATA={}
 os.chdir(xrdRefPattDir)
 for item in range(len(refsamplenameslist)):
-    RefPattDATA[refsamplenameslist[item]]=[[],[]]
+    RefPattDATA[refsamplenameslist[item]]=[[],[],[]]
     if reflist[item].split('.')[1]=='txt':
         filetoread = open(reflist[item],"r")
         filerawdata = filetoread.readlines()
         for row in filerawdata:
             RefPattDATA[refsamplenameslist[item]][0].append(float(row.split("\t")[0]))
             RefPattDATA[refsamplenameslist[item]][1].append(float(row.split("\t")[1]))
+            try:
+                RefPattDATA[refsamplenameslist[item]][2].append(str(row.split("\t")[2])[:-1])
+            except:
+                RefPattDATA[refsamplenameslist[item]][2].append("")
     
 #print(RefPattDATA["jems-Si"])
 
 os.chdir(owd)
 #refsamplenameslist=["Si","pkcubic"]#to be replaced by reading the folder and putting all data in a list and getting the file names in this list
 Patternsamplenameslist=[]
+
+listofanswer={}
+samplestakenforplot=[]
+peaknamesforplot=[]
 
 #%%###############################################################################             
     
@@ -144,14 +146,14 @@ class XRDApp(Toplevel):
         self.shiftYval.set(0)
         self.CheckBkgRemoval = Button(frame211, text="BkgRemoval",command = self.backgroundremoval).pack(side=tk.LEFT,expand=1)
                 
-        frame212=Frame(frame21,borderwidth=0,  bg="lightgrey")
-        frame212.pack(fill=tk.BOTH,expand=1)
-        refpattern=StringVar()
-        refpatternlist=['Original','Si','ITO']#to be replace by actual files in a specific folder
-        cbbox = ttk.Combobox(frame212, textvariable=refpattern, values=refpatternlist)            
-        cbbox.pack(side=tk.LEFT,expand=0)
-        refpattern.set(refpatternlist[0])
-        self.refbut = Button(frame212, text="ShiftToRef",command = self.shifttoRef).pack(side=tk.LEFT,expand=1)
+#        frame212=Frame(frame21,borderwidth=0,  bg="lightgrey")
+#        frame212.pack(fill=tk.BOTH,expand=1)
+#        refpattern=StringVar()
+#        refpatternlist=['Original','Si','ITO']#to be replace by actual files in a specific folder
+#        cbbox = ttk.Combobox(frame212, textvariable=refpattern, values=refpatternlist)            
+#        cbbox.pack(side=tk.LEFT,expand=0)
+#        refpattern.set(refpatternlist[0])
+#        self.refbut = Button(frame212, text="ShiftToRef",command = self.shifttoRef).pack(side=tk.LEFT,expand=1)
                 
         frame213=Frame(frame21,borderwidth=0,  bg="lightgrey")
         frame213.pack(fill=tk.BOTH,expand=1)        
@@ -167,11 +169,15 @@ class XRDApp(Toplevel):
         frame221=Frame(frame22,borderwidth=0,  bg="white")
         frame221.pack(fill=tk.BOTH,expand=1)
         self.importBut = Button(frame221, text="Import",command = self.importDATA).pack(side=tk.LEFT,expand=1)
+        self.importRefBut = Button(frame221, text="ImportRef",command = self.importRefDATA).pack(side=tk.LEFT,expand=1)
         self.UpdateBut = Button(frame221, text="Update",command = lambda: self.updateXRDgraph(0)).pack(side=tk.LEFT,expand=1)
         frame222=Frame(frame22,borderwidth=0,  bg="grey")
         frame222.pack(fill=tk.BOTH,expand=1)
         self.ShowPeakDetectionBut = Button(frame222, text="Peak Detection",command = self.PeakDetection).pack(side="left",expand=1)
-        self.ChangePeakNameBut = Button(frame222, text="Change Peak Names",command = ()).pack(side="right",expand=1)
+        self.ChangePeakNameBut = Button(frame222, text="Change Peak Names",command = self.ChangePeakNames).pack(side="left",expand=1)
+        self.CheckPeakNames = IntVar()
+        Checkbutton(frame222,text="ShowNames",variable=self.CheckPeakNames, 
+                           onvalue=1,offvalue=0,height=1, width=10, command = lambda: self.updateXRDgraph(0),fg='black',background='grey').pack(side=tk.LEFT,expand=1)
         frame223=Frame(frame22,borderwidth=0,  bg="grey")
         frame223.pack(fill=tk.BOTH,expand=1)
         self.thresholdPeakDet = tk.DoubleVar()
@@ -185,21 +191,21 @@ class XRDApp(Toplevel):
         self.CheckPeakDetec = IntVar()
         Checkbutton(frame223,text="Show",variable=self.CheckPeakDetec, 
                            onvalue=1,offvalue=0,height=1, width=3, command = lambda: self.updateXRDgraph(0),fg='black',background='grey').pack(side=tk.LEFT,expand=1)
-       
-        frame23=Frame(frame2,borderwidth=0,  bg="lightgrey")
-        frame23.pack(fill=tk.BOTH,expand=1)
-        frame231=Frame(frame23,borderwidth=0,  bg="lightgrey")
-        frame231.pack(fill=tk.BOTH,expand=1)
-        self.ExportBut = Button(frame231, text="Export",command = ()).pack(side="left",expand=1)
-        self.ExportRefFileBut = Button(frame231, text="ExportasRefFile",command = ()).pack(side="right",expand=1)
-        self.GraphCheck = IntVar()
-        legend=Checkbutton(frame23,text='Graph',variable=self.GraphCheck, 
-                           onvalue=1,offvalue=0,height=1, width=10, command = (), bg="lightgrey")
-        legend.pack(expand=1)
-        self.PeakData = IntVar()
-        legend=Checkbutton(frame23,text='PeakData',variable=self.PeakData, 
-                           onvalue=1,offvalue=0,height=1, width=10, command = (), bg="lightgrey")
-        legend.pack(expand=1)
+               
+#        frame23=Frame(frame2,borderwidth=0,  bg="lightgrey")
+#        frame23.pack(fill=tk.BOTH,expand=1)
+#        frame231=Frame(frame23,borderwidth=0,  bg="lightgrey")
+#        frame231.pack(fill=tk.BOTH,expand=1)
+        self.ExportBut = Button(frame221, text="Export",command =self.Export).pack(side="left",expand=1)
+        self.ExportRefFileBut = Button(frame221, text="ExportasRefFile",command = self.ExportasRef).pack(side="left",expand=1)
+#        self.GraphCheck = IntVar()
+#        legend=Checkbutton(frame23,text='Graph',variable=self.GraphCheck, 
+#                           onvalue=1,offvalue=0,height=1, width=10, command = (), bg="lightgrey")
+#        legend.pack(expand=1)
+#        self.PeakData = IntVar()
+#        legend=Checkbutton(frame23,text='PeakData',variable=self.PeakData, 
+#                           onvalue=1,offvalue=0,height=1, width=10, command = (), bg="lightgrey")
+#        legend.pack(expand=1)
         
         frame5=Frame(self.canvas0,borderwidth=0,  bg="white")
         frame5.pack(fill=tk.BOTH,expand=1)
@@ -226,13 +232,15 @@ class XRDApp(Toplevel):
             self.listboxsamples.insert(tk.END,item)
 
         #lisbox for ref pattern
-        frame323=Frame(frame32,borderwidth=0,  bg="white")
-        frame323.pack(fill=tk.BOTH,expand=1)
+        self.frame323=Frame(frame32,borderwidth=0,  bg="white")
+        self.frame323.pack(fill=tk.BOTH,expand=1)
+        self.frame3231=Frame(self.frame323,borderwidth=0,  bg="white")
+        self.frame3231.pack(fill=tk.BOTH,expand=1)
         refsamplenames = StringVar()
-        self.listboxref=Listbox(frame323,listvariable=refsamplenames, selectmode=tk.MULTIPLE,width=15, height=3, exportselection=0)
+        self.listboxref=Listbox(self.frame3231,listvariable=refsamplenames, selectmode=tk.MULTIPLE,width=15, height=3, exportselection=0)
         self.listboxref.bind('<<ListboxSelect>>', self.updateXRDgraph)
         self.listboxref.pack(side="left", fill=tk.BOTH, expand=1)
-        scrollbar = tk.Scrollbar(frame323, orient="vertical")
+        scrollbar = tk.Scrollbar(self.frame3231, orient="vertical")
         scrollbar.config(command=self.listboxref.yview)
         scrollbar.pack(side="right", fill="y")
         self.listboxref.config(yscrollcommand=scrollbar.set)
@@ -241,10 +249,10 @@ class XRDApp(Toplevel):
             self.listboxref.insert(tk.END,item)
             
         
-        frame321=Frame(frame32,borderwidth=0,  bg="white")
-        frame321.pack(fill=tk.X,expand=0)
-        self.addtolistBut = Button(frame321, text="Add to list",command = ()).pack(side=tk.LEFT,expand=1)
-        self.RemoveFromListBut = Button(frame321, text="Remove from list",command = ()).pack(side=tk.LEFT,expand=1)
+#        frame321=Frame(frame32,borderwidth=0,  bg="white")
+#        frame321.pack(fill=tk.X,expand=0)
+#        self.addtolistBut = Button(frame321, text="Add to list",command = ()).pack(side=tk.LEFT,expand=1)
+#        self.RemoveFromListBut = Button(frame321, text="Remove from list",command = ()).pack(side=tk.LEFT,expand=1)
 
 
 
@@ -277,7 +285,7 @@ class XRDApp(Toplevel):
             
 #%%    
     def updateXRDgraph(self,a):
-        global DATA, RefPattDATA, colorstylelist
+        global DATA, RefPattDATA, colorstylelist, samplestakenforplot
           
         self.XRDgraph.clear()
         
@@ -303,7 +311,12 @@ class XRDApp(Toplevel):
                 
                 self.XRDgraph.plot(x,y, color=colorstylelist[coloridx], label=item)
                 coloridx+=1
-            
+         
+            #add text for Peak Names
+            if self.CheckPeakNames.get():
+                for item in range(len(peaknamesforplot)):
+                    plt.text(peaknamesforplot[item][0],peaknamesforplot[item][1],peaknamesforplot[item][2],rotation=90,verticalalignment='bottom',horizontalalignment='left',multialignment='center')
+
         #plot from RefPattDATA
         reftakenforplot = [self.listboxref.get(idx) for idx in self.listboxref.curselection()]
         for item in reftakenforplot:
@@ -315,13 +328,34 @@ class XRDApp(Toplevel):
                 pair=[(x[i],0), (x[i], y[i])]
                 lines.append(pair)
             
-            
-            linecoll = matcoll.LineCollection(lines, color='black', linestyle='dashed')
+            linecoll = matcoll.LineCollection(lines, color='black', linestyle='dashed') 
 #            linecoll = matcoll.LineCollection(lines)
             self.XRDgraph.add_collection(linecoll)
             self.XRDgraph.scatter(x,y,label=item, color=colorstylelist[coloridx])
             coloridx+=1
+            
+            if self.CheckPeakNames.get():
+                for item1 in range(len(RefPattDATA[item][0])):
+                    if samplestakenforplot!=[]:
+                        if RefPattDATA[item][0][item1]>minX and RefPattDATA[item][0][item1]<maxX:
+                            plt.text(RefPattDATA[item][0][item1],RefPattDATA[item][1][item1],RefPattDATA[item][2][item1],rotation=90,verticalalignment='bottom',horizontalalignment='left',multialignment='center')
+                    else:
+                        plt.text(RefPattDATA[item][0][item1],RefPattDATA[item][1][item1],RefPattDATA[item][2][item1],rotation=90,verticalalignment='bottom',horizontalalignment='left',multialignment='center')
+      
+        coloridx+=1
         
+        if self.CheckPeakDetec.get():
+            if samplestakenforplot!=[]:
+                for item in samplestakenforplot:
+                    for item1 in range(len(DATA[item][5])):
+                        self.XRDgraph.plot(DATA[item][5][item1][0],DATA[item][5][item1][1],color=colorstylelist[coloridx])
+                    for item1 in range(len(DATA[item][6])):
+                        self.XRDgraph.plot([DATA[item][6][item1][0],DATA[item][6][item1][1]],[DATA[item][6][item1][2],DATA[item][6][item1][3]],color=colorstylelist[coloridx+1])
+                    for item1 in range(len(DATA[item][7])):
+                        self.XRDgraph.plot([DATA[item][7][item1][0],DATA[item][7][item1][1]],[DATA[item][7][item1][2],DATA[item][7][item1][3]],color=colorstylelist[coloridx+1])
+
+        
+        #legends and graph styles
         if samplestakenforplot!=[] or  reftakenforplot!=[]:
             self.XRDgraph.legend()
         self.XRDgraph.set_ylabel("Intensity (a.u.)")
@@ -330,7 +364,76 @@ class XRDApp(Toplevel):
             self.XRDgraph.axis([minX,maxX,minY,1.1*maxY])
         plt.gcf().canvas.draw()
         self.CreateTable()
+
+
+    class PopulateListofPeakNames(tk.Frame):
+        def __init__(self, root):
     
+            tk.Frame.__init__(self, root)
+            self.canvas0 = tk.Canvas(root, borderwidth=0, background="#ffffff")
+            self.frame = tk.Frame(self.canvas0, background="#ffffff")
+            self.vsb = tk.Scrollbar(root, orient="vertical", command=self.canvas0.yview)
+            self.canvas0.configure(yscrollcommand=self.vsb.set)
+    
+            self.vsb.pack(side="right", fill="y")
+            self.canvas0.pack(side="left", fill="both", expand=True)
+            self.canvas0.create_window((4,4), window=self.frame, anchor="nw", 
+                                      tags="self.frame")
+    
+            self.frame.bind("<Configure>", self.onFrameConfigure)
+    
+            self.populate()
+    
+        def populate(self):
+            global DATA, listofanswer, samplestakenforplot
+                     
+            rowpos=1
+            if samplestakenforplot!=[]:
+                for item in samplestakenforplot:
+                    for item1 in range(len(DATA[item][4])):
+                        label=tk.Label(self.frame,text=item,fg='black',background='white')
+                        label.grid(row=rowpos,column=0, columnspan=1)
+                        label=tk.Label(self.frame,text="%.2f"%DATA[item][4][item1]["Position"],fg='black',background='white')
+                        label.grid(row=rowpos,column=1, columnspan=1)
+                        textinit = tk.StringVar()
+                        listofanswer[str(DATA[item][4][item1]["Position"])]=Entry(self.frame,textvariable=textinit)
+                        listofanswer[str(DATA[item][4][item1]["Position"])].grid(row=rowpos,column=2, columnspan=2)
+                        textinit.set(DATA[item][4][item1]["PeakName"])
+        
+                        rowpos=rowpos+1
+            
+        def onFrameConfigure(self, event):
+            '''Reset the scroll region to encompass the inner frame'''
+            self.canvas0.configure(scrollregion=self.canvas0.bbox("all"))
+
+        
+    def ChangePeakNames(self):
+        global DATA
+        
+        self.window = tk.Toplevel()
+        self.window.wm_title("Change Peak Names")
+        center(self.window)
+        self.window.geometry("400x300")
+        
+        Button(self.window, text="Update",
+                            command = self.UpdatePeakNames).pack()
+        
+        self.PopulateListofPeakNames(self.window).pack(side="top", fill="both", expand=True)
+    
+    def UpdatePeakNames(self):
+        global DATA, listofanswer, samplestakenforplot, peaknamesforplot
+        
+        peaknamesforplot=[]
+       
+        for item in samplestakenforplot:
+            for item1 in range(len(DATA[item][4])):
+                DATA[item][4][item1]["PeakName"]=listofanswer[str(DATA[item][4][item1]["Position"])].get()
+                peaknamesforplot.append([DATA[item][4][item1]["Position"],DATA[item][4][item1]["Intensity"],DATA[item][4][item1]["PeakName"]])
+        
+        self.window.destroy()
+        self.updateXRDgraph(0)
+
+        
 #%%    
     def backgroundremoval(self):
         global DATA
@@ -358,7 +461,6 @@ class XRDApp(Toplevel):
         
     def shiftY(self):
         global DATA
-        print("here")
         samplestakenforplot = [self.listboxsamples.get(idx) for idx in self.listboxsamples.curselection()]
         if samplestakenforplot!=[]:
             for item in samplestakenforplot:
@@ -370,6 +472,7 @@ class XRDApp(Toplevel):
         
     def shifttoRef(self):
         global DATA
+#        still to be done
 #        automatic detection of peaks and comparison to the selected RefPattern
 #        then shifts the data to match the ref peak
         
@@ -403,30 +506,21 @@ class XRDApp(Toplevel):
 #%%        
    
     def PeakDetection(self):
-        global DATA
-        
-#        DATA["name"][4] = list of dictionaries
-#        {"Position":1,"PeakName":'(005)',"OrigInt":1,"ScaledInt":1,"FWHM":1}
-     
+        global DATA,peaknamesforplot
+        peaknamesforplot=[]  
         samplestakenforplot = [self.listboxsamples.get(idx) for idx in self.listboxsamples.curselection()]
         if samplestakenforplot!=[]:
-#            positionlist=[]
-#            peaknamelist=[]
-#            intensitylist=[]
-#            fwhmlist=[]
+            
             for item in samplestakenforplot:
                 #reinitialize list of dict
-                DATA[item][4]=[]
+                DATA[item][4]=[]#list of dictionaries
+                DATA[item][5]=[]#list of points taken for the peak analysis
+                DATA[item][6]=[]#baselines
+                DATA[item][7]=[]#FWHM lines
                 x=np.array(DATA[item][2])
                 y=np.array(DATA[item][3])
                 #get peak position
                 indexes=peakutils.indexes(y, thres=self.thresholdPeakDet.get(), min_dist=self.MinDistPeakDet.get())
-#                positionlist.append([x[i] for i in indexes])
-#                #'PeakName'
-#                peaknamelist.append(['' for i in indexes])
-#                #'Intensity'
-#                intensitylist.append([y[i] for i in indexes])
-#                'FWHM'
                 
                 for item1 in range(len(indexes)):
                     tempdat={}
@@ -464,6 +558,10 @@ class XRDApp(Toplevel):
                                 tempdat["Intensity"]=Peakheight
                                 tempdat["PeakName"]=''
                                 
+                                DATA[item][5].append([x0,y0])
+                                DATA[item][6].append([x0[0],x0[-1],bhleft,bhright])
+                                DATA[item][7].append([xleftfwhm,xrightfwhm,yfwhm,yfwhm])
+                                
                                 appendcheck=1
                                 break
                             else:
@@ -481,10 +579,55 @@ class XRDApp(Toplevel):
                     if appendcheck:
                         DATA[item][4].append(tempdat)
         
-#        self.TableBuilder(self.frame4)
+        for item in samplestakenforplot:
+            for item1 in range(len(DATA[item][4])):
+                peaknamesforplot.append([DATA[item][4][item1]["Position"],DATA[item][4][item1]["Intensity"],DATA[item][4][item1]["PeakName"]])
+ 
         self.CreateTable()
+        self.updateXRDgraph(0)
         
 #%%
+    def importRefDATA(self):
+        global DATA, RefPattDATA, refsamplenameslist
+
+        #ask for the files
+        file_path =filedialog.askopenfilenames(title="Please select the reference XRD pattern")
+        
+        #read the files and fill the RefPattDATA dictionary 
+        for filename in file_path:
+            filetoread = open(filename,"r")
+            filerawdata = filetoread.readlines()
+            samplename=os.path.splitext(os.path.basename(filename))[0]
+            refsamplenameslist.append(samplename)
+            
+            RefPattDATA[samplename]=[[],[],[]]
+            for row in filerawdata:
+                RefPattDATA[samplename][0].append(float(row.split("\t")[0]))
+                RefPattDATA[samplename][1].append(float(row.split("\t")[1]))
+                try:
+                    RefPattDATA[samplename][2].append(str(row.split("\t")[2])[:-1])
+                except:
+                    RefPattDATA[samplename][2].append("")
+
+        
+        
+        #update the listbox
+        self.frame3231.destroy()
+        self.frame3231=Frame(self.frame323,borderwidth=0,  bg="white")
+        self.frame3231.pack(fill=tk.BOTH,expand=1)
+        refsamplenames = StringVar()
+        self.listboxref=Listbox(self.frame3231,listvariable=refsamplenames, selectmode=tk.MULTIPLE,width=15, height=3, exportselection=0)
+        self.listboxref.bind('<<ListboxSelect>>', self.updateXRDgraph)
+        self.listboxref.pack(side="left", fill=tk.BOTH, expand=1)
+        scrollbar = tk.Scrollbar(self.frame3231, orient="vertical")
+        scrollbar.config(command=self.listboxref.yview)
+        scrollbar.pack(side="right", fill="y")
+        self.listboxref.config(yscrollcommand=scrollbar.set)
+        
+        for item in refsamplenameslist:
+            self.listboxref.insert(tk.END,item)
+        
+    
     def importDATA(self):
         global DATA, Patternsamplenameslist
         
@@ -509,8 +652,10 @@ class XRDApp(Toplevel):
             tempdat.append(y)#original y data
             tempdat.append(x)#corrected x, set as the original on first importation
             tempdat.append(y)#corrected y, set as the original on first importation 
-            tempdat.append([])#peak data, list of dictionaries
-            tempdat.append([])#
+            tempdat.append([])#4 peak data, list of dictionaries
+            tempdat.append([])#5 
+            tempdat.append([])#6 
+            tempdat.append([])#7
             
             DATA[samplename]=tempdat
             Patternsamplenameslist.append(samplename)
@@ -531,6 +676,63 @@ class XRDApp(Toplevel):
         for item in Patternsamplenameslist:
             self.listboxsamples.insert(tk.END,item)
 
+#%%
+
+    def Export(self):
+        global DATA 
+        
+        
+        f = filedialog.asksaveasfilename(defaultextension=".png", filetypes = (("graph file", "*.png"),("All Files", "*.*")))
+        self.fig1.savefig(f, dpi=300) 
+
+        
+        testdata=['name\tPeakName\tPosition\tIntensity\tFWHM\n']
+        dattotxt=[]
+        samplestakenforplot = [self.listboxsamples.get(idx) for idx in self.listboxsamples.curselection()]
+        if samplestakenforplot!=[]:
+            for key in samplestakenforplot:
+                for item in DATA[key][4]:
+                    testdata.append(key +'\t'+ item["PeakName"]+'\t'+str("%.2f"%item["Position"])+'\t'+str("%.2f"%item["Intensity"])+'\t'+str("%.2f"%item["FWHM"])+'\n')
+                x=["2theta","degree",""]
+                y=["XRD intensity", "a.u.",key]
+                for item in range(len(DATA[key][2])):
+                    x.append(DATA[key][2][item])
+                    y.append(DATA[key][3][item])
+                dattotxt.append(x)
+                dattotxt.append(y)
+            
+        file = open(f[:-4]+"PeakDat.txt",'w')
+        file.writelines("%s" % item for item in testdata)
+        file.close()    
+        
+        dattotxt=map(list, six.moves.zip_longest(*dattotxt, fillvalue=' '))
+        dattotxt1=[]
+        for item in dattotxt:
+            line=""
+            for item1 in item:
+                line=line+str(item1)+"\t"
+            line=line[:-1]+"\n"
+            dattotxt1.append(line) 
+        
+        file = open(str(f[:-4]+"_dat.txt"),'w')
+        file.writelines("%s" % item for item in dattotxt1)
+        file.close() 
+        
+        
+    def ExportasRef(self):
+        global DATA,RefPattDATA
+        
+        f = filedialog.asksaveasfilename(defaultextension=".txt")
+        samplestakenforplot = [self.listboxsamples.get(idx) for idx in self.listboxsamples.curselection()]
+        if samplestakenforplot!=[]:
+            for key in samplestakenforplot:
+                datforref=[]
+                for item in range(len(DATA[key][2])):
+                    datforref.append(str(DATA[key][2][item])+'\t'+str(DATA[key][3][item])+'\n')
+                file = open(str(f[:-4]+"_"+key+".txt"),'w')
+                file.writelines("%s" % item for item in datforref)
+                file.close()
+        
 #%%        
     def CreateTable(self):
         global DATA
