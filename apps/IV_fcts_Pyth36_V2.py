@@ -2296,6 +2296,50 @@ class IVApp(Toplevel):
         except:
             print("there's an issue...")
         
+        
+        DatforVocIllumplot={}
+        for key, group in groupby(sorted_datadark, key=lambda x:x['DepID']):
+            if key not in DatforVocIllumplot:
+                DatforVocIllumplot[key]=[[],[],[],[]]#illum, Voc, Jsc, FF
+                for item in group:
+                    DatforVocIllumplot[key][0].append(float(item["Illumination"][6:-1])/100)
+                    DatforVocIllumplot[key][1].append(item['Voc'])
+                    DatforVocIllumplot[key][2].append(item['Jsc'])
+                    DatforVocIllumplot[key][3].append(item['FF'])
+        
+        for key, group in groupby(sorted_datajv, key=lambda x:x['DepID']):
+            if key in DatforVocIllumplot:
+                for item in group:
+                    DatforVocIllumplot[key][0].append(1)
+                    DatforVocIllumplot[key][1].append(item['Voc'])
+                    DatforVocIllumplot[key][2].append(item['Jsc'])
+                    DatforVocIllumplot[key][3].append(item['FF'])
+        
+        
+        for item in list(DatforVocIllumplot.keys()):
+            plt.close("all")
+            fig =plt.figure()
+            plt.semilogx(DatforVocIllumplot[item][0],DatforVocIllumplot[item][1],'ro')
+            plt.xlabel('Illumination')
+            plt.ylabel('Voc (mV)')
+            plt.savefig(item +'_illumVSVoc.png',dpi=300)
+            plt.close(fig) 
+            plt.close('all')
+            fig =plt.figure()
+            plt.semilogx(DatforVocIllumplot[item][0],DatforVocIllumplot[item][2],'ro')
+            plt.xlabel('Illumination')
+            plt.ylabel('Jsc (mA/cm'+'\xb2'+')')
+            plt.savefig(item +'_illumVSJsc.png',dpi=300)
+            plt.close(fig) 
+            plt.close('all')
+            fig =plt.figure()
+            plt.semilogx(DatforVocIllumplot[item][0],DatforVocIllumplot[item][3],'ro')
+            plt.xlabel('Illumination')
+            plt.ylabel('FF (%)')
+            plt.savefig(item +'_illumVSFF.png',dpi=300)
+            plt.close(fig) 
+            plt.close('all')
+        
         for key, group in groupby(sorted_datadark, key=lambda x:x['DepID']):
             substratpartdat=[key,list(group)]
             DATAdarkbysubstrate.append(copy.deepcopy(substratpartdat))
@@ -2305,7 +2349,7 @@ class IVApp(Toplevel):
                     for item in range(len(substratpartdat[1])):
                         contenttxtfile[0] += "Voltage\t" + "Current density\t" 
                         contenttxtfile[1] += "mV\t" + "mA/cm2\t"
-                        contenttxtfile[2] += " \t" + substratpartdat[1][item]["SampleName"] + '\t'
+                        contenttxtfile[2] += " \t" + substratpartdat[1][item]["SampleName"]+'_'+substratpartdat[1][item]["Illumination"][6:] + '\t'
                     contenttxtfile[0]=contenttxtfile[0][:-1]+'\n'
                     contenttxtfile[1]=contenttxtfile[1][:-1]+'\n'
                     contenttxtfile[2]=contenttxtfile[2][:-1]+'\n'
@@ -2340,7 +2384,7 @@ class IVApp(Toplevel):
                     else:
                         y2=10
                     for item in range(len(substratpartdat[1])):
-                        axs[0].plot(DATAdarkbysubstrate[-1][1][item]["IVData"][0],DATAdarkbysubstrate[-1][1][item]["IVData"][1], label=DATAdarkbysubstrate[-1][1][item]["SampleName"])
+                        axs[0].plot(DATAdarkbysubstrate[-1][1][item]["IVData"][0],DATAdarkbysubstrate[-1][1][item]["IVData"][1], label=DATAdarkbysubstrate[-1][1][item]["Illumination"][6:])
                         if min(DATAdarkbysubstrate[-1][1][item]["IVData"][0])<x1:
                             x1=copy.deepcopy(min(DATAdarkbysubstrate[-1][1][item]["IVData"][0]))
                         if max(DATAdarkbysubstrate[-1][1][item]["IVData"][0])>x2:
@@ -2357,7 +2401,7 @@ class IVApp(Toplevel):
                     axs[0].axvline(x=0, color='k')
                     axs[0].axis([x1,x2,y1,y2])
                     for item in range(len(substratpartdat[1])):
-                        axs[1].semilogy(DATAdarkbysubstrate[-1][1][item]["IVData"][0],list(map(abs, DATAdarkbysubstrate[-1][1][item]["IVData"][1])), label=DATAdarkbysubstrate[-1][1][item]["SampleName"])
+                        axs[1].semilogy(DATAdarkbysubstrate[-1][1][item]["IVData"][0],list(map(abs, DATAdarkbysubstrate[-1][1][item]["IVData"][1])), label=DATAdarkbysubstrate[-1][1][item]["Illumination"][6:])
                     axs[1].set_title("logscale")
                     axs[1].set_xlabel('Voltage (mV)')
                     axs[1].axhline(y=0, color='k')
