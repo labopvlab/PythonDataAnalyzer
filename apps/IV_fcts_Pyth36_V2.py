@@ -2296,50 +2296,64 @@ class IVApp(Toplevel):
         except:
             print("there's an issue...")
         
-        
-        DatforVocIllumplot={}
-        for key, group in groupby(sorted_datadark, key=lambda x:x['DepID']):
-            if key not in DatforVocIllumplot:
-                DatforVocIllumplot[key]=[[],[],[],[]]#illum, Voc, Jsc, FF
-                for item in group:
-                    DatforVocIllumplot[key][0].append(float(item["Illumination"][6:-1])/100)
-                    DatforVocIllumplot[key][1].append(item['Voc'])
-                    DatforVocIllumplot[key][2].append(item['Jsc'])
-                    DatforVocIllumplot[key][3].append(item['FF'])
-        
-        for key, group in groupby(sorted_datajv, key=lambda x:x['DepID']):
-            if key in DatforVocIllumplot:
-                for item in group:
-                    DatforVocIllumplot[key][0].append(1)
-                    DatforVocIllumplot[key][1].append(item['Voc'])
-                    DatforVocIllumplot[key][2].append(item['Jsc'])
-                    DatforVocIllumplot[key][3].append(item['FF'])
-        
-        
-        for item in list(DatforVocIllumplot.keys()):
+        if self.AutoGraphs.get():
+            #make graph Voc vs illumination
+            DatforVocIllumplot={}
+            for key, group in groupby(sorted_datadark, key=lambda x:x['DepID']):
+                if key not in DatforVocIllumplot:
+                    DatforVocIllumplot[key]=[[],[],[],[]]#illum, Voc, Jsc, FF
+                    for item in group:
+                        DatforVocIllumplot[key][0].append(float(item["Illumination"][6:-1])/100)
+                        DatforVocIllumplot[key][1].append(item['Voc'])
+                        DatforVocIllumplot[key][2].append(item['Jsc'])
+                        DatforVocIllumplot[key][3].append(item['FF'])
+            
+            for key, group in groupby(sorted_datajv, key=lambda x:x['DepID']):
+                if key in DatforVocIllumplot:
+                    for item in group:
+                        DatforVocIllumplot[key][0].append(1)
+                        DatforVocIllumplot[key][1].append(item['Voc'])
+                        DatforVocIllumplot[key][2].append(item['Jsc'])
+                        DatforVocIllumplot[key][3].append(item['FF'])
+            
+            for item in list(DatforVocIllumplot.keys()):
+                plt.close("all")
+                fig =plt.figure()
+                plt.semilogx(DatforVocIllumplot[item][0],DatforVocIllumplot[item][1],'ro')
+                plt.xlabel('Illumination (sun)')
+                plt.ylabel('Voc (mV)')
+                plt.savefig(item +'_illumVSVoc.png',dpi=300)
+                plt.close(fig) 
+                plt.close('all')
+                fig =plt.figure()
+                plt.plot(DatforVocIllumplot[item][0],DatforVocIllumplot[item][2],'ro')
+                plt.xlabel('Illumination (sun)')
+                plt.ylabel('Jsc (mA/cm'+'\xb2'+')')
+                plt.savefig(item +'_illumVSJsc.png',dpi=300)
+                plt.close(fig) 
+                plt.close('all')
+#                fig =plt.figure()
+#                plt.semilogx(DatforVocIllumplot[item][0],DatforVocIllumplot[item][3],'ro')
+#                plt.xlabel('Illumination (sun)')
+#                plt.ylabel('FF (%)')
+#                plt.savefig(item +'_illumVSFF.png',dpi=300)
+#                plt.close(fig) 
+#                plt.close('all')
+            
             plt.close("all")
             fig =plt.figure()
-            plt.semilogx(DatforVocIllumplot[item][0],DatforVocIllumplot[item][1],'ro')
-            plt.xlabel('Illumination')
+            for item in list(DatforVocIllumplot.keys()):
+                plt.semilogx(DatforVocIllumplot[item][0],DatforVocIllumplot[item][1],'o',label=item)
+            plt.xlabel('Illumination (sun)')
             plt.ylabel('Voc (mV)')
-            plt.savefig(item +'_illumVSVoc.png',dpi=300)
+            leg=plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+            extent = fig.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+            plt.savefig(batchname+'_AllillumVSVoc.png',dpi=300, bbox_extra_artists=(leg,),bbox_inches=extent.expanded(1.5, 1))
             plt.close(fig) 
             plt.close('all')
-            fig =plt.figure()
-            plt.semilogx(DatforVocIllumplot[item][0],DatforVocIllumplot[item][2],'ro')
-            plt.xlabel('Illumination')
-            plt.ylabel('Jsc (mA/cm'+'\xb2'+')')
-            plt.savefig(item +'_illumVSJsc.png',dpi=300)
-            plt.close(fig) 
-            plt.close('all')
-            fig =plt.figure()
-            plt.semilogx(DatforVocIllumplot[item][0],DatforVocIllumplot[item][3],'ro')
-            plt.xlabel('Illumination')
-            plt.ylabel('FF (%)')
-            plt.savefig(item +'_illumVSFF.png',dpi=300)
-            plt.close(fig) 
-            plt.close('all')
+            
         
+        #dark plots
         for key, group in groupby(sorted_datadark, key=lambda x:x['DepID']):
             substratpartdat=[key,list(group)]
             DATAdarkbysubstrate.append(copy.deepcopy(substratpartdat))
