@@ -1512,10 +1512,17 @@ class IVApp(Toplevel):
                             partdict["ScanDirection"]="Forward"
                         partdict["Group"]="Default group"
                         ivpartdat = [[],[]]#[voltage,current]
-                        for item in range(37,36+int(partdict["NbPoints"]),1):
-                            ivpartdat[0].append(float(xlsheet.cell(item,3).value))
-                            ivpartdat[1].append(1000*float(xlsheet.cell(item,4).value)/partdict["CellSurface"])
-                        partdict["IVData"]=ivpartdat
+                        
+                        item=0
+                        try:
+                            while(1):
+                                print(xlsheet.cell(37+item,3).value)
+                                ivpartdat[0].append(float(xlsheet.cell(37+item,3).value))
+                                ivpartdat[1].append(1000*float(xlsheet.cell(37+item,4).value)/partdict["CellSurface"])
+                                item+=1
+                        except IndexError:
+                            partdict["IVData"]=ivpartdat
+                        
                         try:
                             if partdict["Illumination"]=="Light" and max(ivpartdat[0])>0.001*float(partdict["Voc"]):
                                 f = interp1d(ivpartdat[0], ivpartdat[1], kind='cubic')
