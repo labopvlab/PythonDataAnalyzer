@@ -257,7 +257,7 @@ class SpectroApp(Toplevel):
                 elif samplename[-2:]=="_T" or samplename[-2:]=="-T":
                     curvetype="TT"
                     samplenameshort = samplename[:-2]
-                elif samplename[-3:]=="_TR" or samplename[-3:]=="-TR":
+                elif samplename[-3:]=="_TR" or samplename[-3:]=="-TR" or samplename[-3:]=="_RT" or samplename[-3:]=="-RT":
                     curvetype="TR" 
                     samplenameshort = samplename[:-3]
                 elif  samplename[-2:]=="_R" or samplename[-2:]=="-R":
@@ -274,7 +274,7 @@ class SpectroApp(Toplevel):
                 content = file1.readlines()
                 file1.close()
                 
-                dataCurve = content[(content.index('#DATA\n') + 1):len(content)]                            
+                dataCurve = content[(content.index('#DATA\n')):len(content)]                            
                 dataWave = []
                 dataInt = []
                 for i in range(len(dataCurve)):
@@ -297,7 +297,7 @@ class SpectroApp(Toplevel):
                 elif samplename[-2:]=="_T" or samplename[-2:]=="-T":
                     curvetype="TT"
                     samplenameshort = samplename[:-2]
-                elif samplename[-3:]=="_TR" or samplename[-3:]=="-TR":
+                elif samplename[-3:]=="_TR" or samplename[-3:]=="-TR" or samplename[-3:]=="_RT" or samplename[-3:]=="-RT":
                     curvetype="TR" 
                     samplenameshort = samplename[:-3]
                 elif  samplename[-2:]=="_R" or samplename[-2:]=="-R":
@@ -334,7 +334,7 @@ class SpectroApp(Toplevel):
                 elif samplename[-2:]=="_T" or samplename[-2:]=="-T":
                     curvetype="TT"
                     samplenameshort = samplename[:-2]
-                elif samplename[-3:]=="_TR" or samplename[-3:]=="-TR":
+                elif samplename[-3:]=="_TR" or samplename[-3:]=="-TR" or samplename[-3:]=="_RT" or samplename[-3:]=="-RT":
                     curvetype="TR" 
                     samplenameshort = samplename[:-3]
                 elif  samplename[-2:]=="_R" or samplename[-2:]=="-R":
@@ -353,7 +353,7 @@ class SpectroApp(Toplevel):
                 if content[-1] == '\n': #condition added to screen for extra blank line at the end of file. Necessary for CSEM spectro
                     del(content[-1])
                 
-                dataCurve = content[(content.index('#DATA\n') + 1):len(content)] 
+                dataCurve = content[(content.index('#DATA\n')):len(content)] 
                 dataWave = []
                 dataInt = []
                 for i in range(len(dataCurve)):
