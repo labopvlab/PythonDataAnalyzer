@@ -2,7 +2,7 @@
 
 import os
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
 import tkinter as tk
 from tkinter import Entry, Button,messagebox, Checkbutton, IntVar, Toplevel, OptionMenu, Frame, StringVar
@@ -79,7 +79,7 @@ class SpectroApp(Toplevel):
         canvas = FigureCanvasTkAgg(self.fig, frame1)
         canvas.get_tk_widget().pack(fill=tk.BOTH,expand=1)
         self.Spectrograph=self.fig.add_subplot(111)
-        self.toolbar = NavigationToolbar2TkAgg(canvas, frame1)
+        self.toolbar = NavigationToolbar2Tk(canvas, frame1)
         self.toolbar.update()
         canvas._tkcanvas.pack(fill = BOTH, expand = 1) 
         

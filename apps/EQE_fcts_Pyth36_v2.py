@@ -3,7 +3,7 @@
 import os, datetime
 
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
 import tkinter as tk
 from tkinter import Tk, messagebox, Entry, Button, Checkbutton, IntVar, Toplevel, OptionMenu, Frame, StringVar, Scrollbar, Listbox
@@ -112,7 +112,7 @@ class EQEApp(Toplevel):
         canvas.get_tk_widget().pack(fill=tk.BOTH,expand=1)
         self.EQEgraph = plt.subplot2grid((1, 5), (0, 0), colspan=3)
         self.EQEgraphY2 = self.EQEgraph.twinx()
-        self.toolbar = NavigationToolbar2TkAgg(canvas, frame1)
+        self.toolbar = NavigationToolbar2Tk(canvas, frame1)
         self.toolbar.update()
         canvas._tkcanvas.pack(fill = BOTH, expand = 1) 
         

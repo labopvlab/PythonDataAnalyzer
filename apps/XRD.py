@@ -3,7 +3,7 @@
 import os, datetime
 
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib import collections as matcoll
 from matplotlib import colors as mcolors
 from tkinter.ttk import Treeview
@@ -125,7 +125,7 @@ class XRDApp(Toplevel):
         canvas = FigureCanvasTkAgg(self.fig1, frame1)
         canvas.get_tk_widget().pack(fill=tk.BOTH,expand=1)
         self.XRDgraph = plt.subplot2grid((1, 1), (0, 0), colspan=3)
-        self.toolbar = NavigationToolbar2TkAgg(canvas, frame1)
+        self.toolbar = NavigationToolbar2Tk(canvas, frame1)
         self.toolbar.update()
         canvas._tkcanvas.pack(fill=tk.BOTH,expand=1) 
         
