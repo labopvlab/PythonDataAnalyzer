@@ -455,7 +455,11 @@ class EQEApp(Toplevel):
                                 xhighslope = newx[minder]
                                 yhighslope = spl(newx[minder]).tolist()
                                 yprimehighslope = splder(newx[minder]).tolist()
-                                Eg= 1239.8/(xhighslope - yhighslope/yprimehighslope)
+                                if (xhighslope - yhighslope == 0) or (yprimehighslope == 0): #to avoid division by zero
+                                    Eg=0
+                                    print('Unable to compute Eg...')
+                                else:
+                                    Eg= 1239.8/(xhighslope - yhighslope/yprimehighslope)
                                 datadict['Eg'].append(Eg)
                                 datadict['tangent'].append([yprimehighslope, yhighslope-yprimehighslope*xhighslope])#[pente,ordonnee a l'origine]
     
