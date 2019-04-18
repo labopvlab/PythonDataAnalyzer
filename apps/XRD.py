@@ -3,7 +3,7 @@
 import os, datetime
 
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib import collections as matcoll
 from matplotlib import colors as mcolors
 from tkinter.ttk import Treeview
@@ -31,6 +31,8 @@ from tkinter import font as tkFont
 
 """
 TODOLIST
+
+- make diologue box appear to ask where the data came from
 
 - shift to ref auto
 
@@ -125,7 +127,7 @@ class XRDApp(Toplevel):
         canvas = FigureCanvasTkAgg(self.fig1, frame1)
         canvas.get_tk_widget().pack(fill=tk.BOTH,expand=1)
         self.XRDgraph = plt.subplot2grid((1, 1), (0, 0), colspan=3)
-        self.toolbar = NavigationToolbar2Tk(canvas, frame1)
+        self.toolbar = NavigationToolbar2TkAgg(canvas, frame1)
         self.toolbar.update()
         canvas._tkcanvas.pack(fill=tk.BOTH,expand=1) 
         
@@ -632,33 +634,66 @@ class XRDApp(Toplevel):
         global DATA, Patternsamplenameslist
         
         #ask for the files
-        file_path =filedialog.askopenfilenames(title="Please select the XRD files")
+        #self.WhichXRD()
+        DataSource = messagebox.askquestion(title='Data Source', message='Which XRD machine gave you your precious data? \n yes = EPFL, no = CSEM')
         
-        #read the files and fill the DATA dictionary 
-        for filename in file_path:
-            tempdat=[]
-            filetoread = open(filename,"r")
-            filerawdata = filetoread.readlines()
-            samplename=os.path.splitext(os.path.basename(filename))[0]
-                
-            x=[]
-            y=[]
-                
-            for item in filerawdata:
-                x.append(float(item.split(' ')[0]))
-                y.append(float(item.split(' ')[1]))
-                
-            tempdat.append(x)#original x data
-            tempdat.append(y)#original y data
-            tempdat.append(x)#corrected x, set as the original on first importation
-            tempdat.append(y)#corrected y, set as the original on first importation 
-            tempdat.append([])#4 peak data, list of dictionaries
-            tempdat.append([])#5 
-            tempdat.append([])#6 
-            tempdat.append([])#7
+        if DataSource == "yes":
+            file_path =filedialog.askopenfilenames(title="Please select the XRD files")
             
-            DATA[samplename]=tempdat
-            Patternsamplenameslist.append(samplename)
+            #read the files and fill the DATA dictionary 
+            for filename in file_path:
+                tempdat=[]
+                filetoread = open(filename,"r")
+                filerawdata = filetoread.readlines()
+                samplename=os.path.splitext(os.path.basename(filename))[0]
+                    
+                x=[]
+                y=[]
+                    
+                for item in filerawdata:
+                        x.append(float(item.split(' ')[0]))
+                        y.append(float(item.split(' ')[1]))
+                    
+                tempdat.append(x)#original x data
+                tempdat.append(y)#original y data
+                tempdat.append(x)#corrected x, set as the original on first importation
+                tempdat.append(y)#corrected y, set as the original on first importation 
+                tempdat.append([])#4 peak data, list of dictionaries
+                tempdat.append([])#5 
+                tempdat.append([])#6 
+                tempdat.append([])#7
+                
+                DATA[samplename]=tempdat
+                Patternsamplenameslist.append(samplename)
+            
+        elif DataSource == "no":
+            file_path =filedialog.askopenfilenames(title="Please select the XRD files")
+            
+            #read the files and fill the DATA dictionary 
+            for filename in file_path:
+                tempdat=[]
+                filetoread = open(filename,"r")
+                samplename=os.path.splitext(os.path.basename(filename))[0]
+                filerawdata = filetoread.readlines()
+                
+                x=[]
+                y=[]
+                
+                for line in filerawdata[30:]:
+                    x.append(float(line.split(',')[0]))
+                    y.append(float(line.split(',')[1]))
+                    
+                tempdat.append(x)#original x data
+                tempdat.append(y)#original y data
+                tempdat.append(x)#corrected x, set as the original on first importation
+                tempdat.append(y)#corrected y, set as the original on first importation 
+                tempdat.append([])#4 peak data, list of dictionaries
+                tempdat.append([])#5 
+                tempdat.append([])#6 
+                tempdat.append([])#7
+                
+                DATA[samplename]=tempdat
+                Patternsamplenameslist.append(samplename)
         
         #update the listbox
         self.frame3221.destroy()
@@ -675,6 +710,14 @@ class XRDApp(Toplevel):
         
         for item in Patternsamplenameslist:
             self.listboxsamples.insert(tk.END,item)
+    
+#    def WhichXRD(self):
+#        win = Toplevel()
+#        win.title('Data Source')
+#        message = 'Which XRD machine gave you your precious data?'
+#        Label(Toplevel(), text='123').pack()
+#        Button(win, text='EPFL')
+#        Button(win, text='CSEM')
 
 #%%
 

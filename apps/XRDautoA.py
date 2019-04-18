@@ -131,6 +131,8 @@ def XRDautoanalysis():
     global colorstylelist
     
     file_path =filedialog.askopenfilenames(title="Please select the XRD files")
+    DataSource = messagebox.askquestion(title='Data Source', message='Which XRD machine gave you your precious data? \n yes = EPFL, no = CSEM')
+    
     #select a result folder
     
     current_path=os.path.dirname(os.path.dirname(file_path[0]))
@@ -141,42 +143,78 @@ def XRDautoanalysis():
     DATA=[]
     #analyze and create data list
     #export graphs on-the-fly
-    
-    for filename in file_path:
-        filetoread = open(filename,"r")
-        filerawdata = filetoread.readlines()
-        samplename=os.path.splitext(os.path.basename(filename))[0]
-    
-        x=[]
-        y=[]
+    if DataSource == "yes":
+        for filename in file_path:
+            filetoread = open(filename,"r")
+            filerawdata = filetoread.readlines()
+            samplename=os.path.splitext(os.path.basename(filename))[0]
+        
+            x=[]
+            y=[]
+                
+            for item in filerawdata:
+                x.append(float(item.split(' ')[0]))
+                y.append(float(item.split(' ')[1]))
             
-        for item in filerawdata:
-            x.append(float(item.split(' ')[0]))
-            y.append(float(item.split(' ')[1]))
+            x=np.array(x)
+            y=np.array(y)
+            
+        #    if max(y)<3000:
+        #        threshold=0.065
+        #    elif max(y)>3000 and max(y)<10000:
+        #        threshold=0.05
+        #    elif max(y)>10000:
+        #        threshold=0.04    
+            threshold=0.01  
+            MinDist=50
+            
+            while(1):
+                indexes = peakutils.indexes(y, thres=threshold, min_dist=MinDist)
+        #        print(len(indexes))
+                if len(indexes)<15:
+                    break
+                else:
+                    threshold+=0.01
+            
+            dat=listofpeakinfo(x,y,indexes,samplename)
+            
+            DATA.append([str(samplename),x,y,dat,max([item[2] for item in dat])])#[samplename,X,Y,[[center,FWHM,Peakheight],[]...],maxpeakheight]
+    elif DataSource == "no":
+        for filename in file_path:
+            filetoread = open(filename,"r")
+            filerawdata = filetoread.readlines()
+            samplename=os.path.splitext(os.path.basename(filename))[0]
         
-        x=np.array(x)
-        y=np.array(y)
-        
-    #    if max(y)<3000:
-    #        threshold=0.065
-    #    elif max(y)>3000 and max(y)<10000:
-    #        threshold=0.05
-    #    elif max(y)>10000:
-    #        threshold=0.04    
-        threshold=0.01  
-        MinDist=50
-        
-        while(1):
-            indexes = peakutils.indexes(y, thres=threshold, min_dist=MinDist)
-    #        print(len(indexes))
-            if len(indexes)<15:
-                break
-            else:
-                threshold+=0.01
-        
-        dat=listofpeakinfo(x,y,indexes,samplename)
-        
-        DATA.append([str(samplename),x,y,dat,max([item[2] for item in dat])])#[samplename,X,Y,[[center,FWHM,Peakheight],[]...],maxpeakheight]
+            x=[]
+            y=[]
+                
+            for line in filerawdata[30:]:
+                x.append(float(line.split(',')[0]))
+                y.append(float(line.split(',')[1]))
+            
+            x=np.array(x)
+            y=np.array(y)
+            
+        #    if max(y)<3000:
+        #        threshold=0.065
+        #    elif max(y)>3000 and max(y)<10000:
+        #        threshold=0.05
+        #    elif max(y)>10000:
+        #        threshold=0.04    
+            threshold=0.01  
+            MinDist=50
+            
+            while(1):
+                indexes = peakutils.indexes(y, thres=threshold, min_dist=MinDist)
+        #        print(len(indexes))
+                if len(indexes)<15:
+                    break
+                else:
+                    threshold+=0.01
+            
+            dat=listofpeakinfo(x,y,indexes,samplename)
+            
+            DATA.append([str(samplename),x,y,dat,max([item[2] for item in dat])])#[samplename,X,Y,[[center,FWHM,Peakheight],[]...],maxpeakheight]
     
     #create a graph with all rawdata arranged vertically, without overlapping
     font = {'color':  'black',

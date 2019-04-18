@@ -3,7 +3,7 @@
 import os
 
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 
 import tkinter as tk
 from tkinter import Tk, messagebox, Entry, Button, Checkbutton, IntVar, Toplevel, OptionMenu, Frame, StringVar, Scrollbar, Listbox
@@ -85,7 +85,7 @@ class JVfollowup(Toplevel):
         canvas = FigureCanvasTkAgg(self.fig1, frame1)
         canvas.get_tk_widget().pack(fill=tk.BOTH,expand=1)
         self.JVparamgraph = plt.subplot2grid((1, 5), (0, 0), colspan=5)
-        self.toolbar = NavigationToolbar2Tk(canvas, frame1)
+        self.toolbar = NavigationToolbar2TkAgg(canvas, frame1)
         self.toolbar.update()
         canvas._tkcanvas.pack(fill = BOTH, expand = 1) 
         
