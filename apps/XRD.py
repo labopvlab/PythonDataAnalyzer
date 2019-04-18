@@ -32,8 +32,6 @@ from tkinter import font as tkFont
 """
 TODOLIST
 
-- make diologue box appear to ask where the data came from
-
 - shift to ref auto
 
 - show peak fitting
@@ -634,66 +632,42 @@ class XRDApp(Toplevel):
         global DATA, Patternsamplenameslist
         
         #ask for the files
+        file_path =filedialog.askopenfilenames(title="Please select the XRD files")
         #self.WhichXRD()
         DataSource = messagebox.askquestion(title='Data Source', message='Which XRD machine gave you your precious data? \n yes = EPFL, no = CSEM')
         
-        if DataSource == "yes":
-            file_path =filedialog.askopenfilenames(title="Please select the XRD files")
+
+        
+        #read the files and fill the DATA dictionary 
+        for filename in file_path:
+            tempdat=[]
+            filetoread = open(filename,"r")
+            samplename=os.path.splitext(os.path.basename(filename))[0]
+            filerawdata = filetoread.readlines()
+                
+            x=[]
+            y=[]
             
-            #read the files and fill the DATA dictionary 
-            for filename in file_path:
-                tempdat=[]
-                filetoread = open(filename,"r")
-                filerawdata = filetoread.readlines()
-                samplename=os.path.splitext(os.path.basename(filename))[0]
-                    
-                x=[]
-                y=[]
-                    
+            if DataSource == "yes":
                 for item in filerawdata:
-                        x.append(float(item.split(' ')[0]))
-                        y.append(float(item.split(' ')[1]))
-                    
-                tempdat.append(x)#original x data
-                tempdat.append(y)#original y data
-                tempdat.append(x)#corrected x, set as the original on first importation
-                tempdat.append(y)#corrected y, set as the original on first importation 
-                tempdat.append([])#4 peak data, list of dictionaries
-                tempdat.append([])#5 
-                tempdat.append([])#6 
-                tempdat.append([])#7
-                
-                DATA[samplename]=tempdat
-                Patternsamplenameslist.append(samplename)
-            
-        elif DataSource == "no":
-            file_path =filedialog.askopenfilenames(title="Please select the XRD files")
-            
-            #read the files and fill the DATA dictionary 
-            for filename in file_path:
-                tempdat=[]
-                filetoread = open(filename,"r")
-                samplename=os.path.splitext(os.path.basename(filename))[0]
-                filerawdata = filetoread.readlines()
-                
-                x=[]
-                y=[]
-                
+                    x.append(float(item.split(' ')[0]))
+                    y.append(float(item.split(' ')[1]))
+            elif DataSource == "no":
                 for line in filerawdata[30:]:
                     x.append(float(line.split(',')[0]))
                     y.append(float(line.split(',')[1]))
-                    
-                tempdat.append(x)#original x data
-                tempdat.append(y)#original y data
-                tempdat.append(x)#corrected x, set as the original on first importation
-                tempdat.append(y)#corrected y, set as the original on first importation 
-                tempdat.append([])#4 peak data, list of dictionaries
-                tempdat.append([])#5 
-                tempdat.append([])#6 
-                tempdat.append([])#7
                 
-                DATA[samplename]=tempdat
-                Patternsamplenameslist.append(samplename)
+            tempdat.append(x)#original x data
+            tempdat.append(y)#original y data
+            tempdat.append(x)#corrected x, set as the original on first importation
+            tempdat.append(y)#corrected y, set as the original on first importation 
+            tempdat.append([])#4 peak data, list of dictionaries
+            tempdat.append([])#5 
+            tempdat.append([])#6 
+            tempdat.append([])#7
+            
+            DATA[samplename]=tempdat
+            Patternsamplenameslist.append(samplename)
         
         #update the listbox
         self.frame3221.destroy()
