@@ -22,7 +22,7 @@ still to be added:
 """
 #%%
 import os
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import matplotlib.pyplot as plt
 from PIL import ImageTk
 import PIL.Image
@@ -562,7 +562,7 @@ class PlotNKdat(Toplevel):
         canvas.get_tk_widget().pack(fill=tk.BOTH,expand=1)
         self.nkgraph = plt.subplot2grid((1, 5), (0, 0), colspan=5)
 #        self.nkgraph=plt.subplot2grid()
-        self.toolbar = NavigationToolbar2TkAgg(canvas, self.frame11)
+        self.toolbar = NavigationToolbar2Tk(canvas, self.frame11)
         self.toolbar.update()
         canvas._tkcanvas.pack(fill = tk.BOTH, expand = 1) 
         
@@ -614,7 +614,7 @@ class PlotNKdat(Toplevel):
         canvas = FigureCanvasTkAgg(self.fig1, self.frame11)
         canvas.get_tk_widget().pack(fill=tk.BOTH,expand=1)
         self.nkgraph = plt.subplot2grid((1, 5), (0, 0), colspan=5)
-        self.toolbar = NavigationToolbar2TkAgg(canvas, self.frame11)
+        self.toolbar = NavigationToolbar2Tk(canvas, self.frame11)
         self.toolbar.update()
         canvas._tkcanvas.pack(fill = tk.BOTH, expand = 1) 
         
