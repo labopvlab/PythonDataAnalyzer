@@ -2,7 +2,7 @@
 
 import os
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
 import tkinter as tk
 from tkinter import *
@@ -1558,26 +1558,27 @@ class IVApp(Toplevel):
             print(i)
             filetype = 0
             for item0 in range(len(filerawdata)):
-                if "voltage/current" in filerawdata[item0]:
+                if "voltage/current" in filerawdata[item0]: #must change to something not found in 3sun file
                     filetype = 1
                     break
                 if "IV FRLOOP" in filerawdata[item0]:
                     filetype =2
                     break
-                elif "Mpp tracker" in filerawdata[item0]:
-#                    for item1 in range(len(filerawdata)):
-#                        if "% MEASURED Pmpptracker" in filerawdata[item0]:
+                if "Mpp tracker" in filerawdata[item0]:
                     filetype = 3
                     break
-                elif "Fixed voltage" in filerawdata[item0]:
+                if "Fixed voltage" in filerawdata[item0]:
                     filetype = 4
                     break
-                elif "Keithley 238" in filerawdata[item0]:
+                if "3SUN IV" in filerawdata[item0]:
                     filetype = 5
+                    break
+                if "3SUN MPP" in filerawdata[item0]:
+                    filetype = 6
                     break
             
                                 
-            if filetype ==1 or filetype==2: #J-V files and FRLOOP
+            if filetype ==1 or filetype==2: #J-V files or FRLOOP
                 partdict = {}
                 partdict["filepath"]=file_path[i]
                 partdict["MeasComment"]="-"
@@ -1707,7 +1708,7 @@ class IVApp(Toplevel):
                 partdict["IVData"]=ivpartdat
                 
                 partdict["Group"]="Default group"
-                partdict["Setup"]="TFIV"              
+                partdict["Setup"]="TFIV"
                 partdict["RefNomCurr"]=999
                 partdict["RefMeasCurr"]=999
                 partdict["AirTemp"]=999
@@ -1729,7 +1730,7 @@ class IVApp(Toplevel):
                 else:
                     DATAdark.append(partdict)
                         
-            elif filetype==3: #Mpp files
+            if filetype==3: #Mpp files
                 partdict = {}
                 partdict["filepath"]=file_path[i]
                 partdict["MeasComment"]="-"
@@ -1784,7 +1785,7 @@ class IVApp(Toplevel):
                         partdict["Vend"]=str(float(filerawdata[item][5:-1]))
                         break
                 for item in range(len(filerawdata)):
-                    if "Execution time:" in filerawdata[item]:
+                    if "Execution time [s]:" in filerawdata[item]:
                         partdict["ExecTime"]=str(float(filerawdata[item][16:-1]))
                         break
                 for item in range(len(filerawdata)):
@@ -1795,7 +1796,6 @@ class IVApp(Toplevel):
                     if "MEASURED Pmpptracker" in filerawdata[item]:
                         pos=item+2
                         break
-                partdict["Group"]="Default group"
                 mpppartdat = [[],[],[],[],[]]#[voltage,current,time,power,vstep]
                 for item in range(pos,len(filerawdata),1):
                     mpppartdat[0].append(float(filerawdata[item].split("\t")[0]))
@@ -1807,10 +1807,11 @@ class IVApp(Toplevel):
                 partdict["PowerAvg"]=sum(mpppartdat[3])/float(len(mpppartdat[3]))
                 partdict["trackingduration"]=mpppartdat[2][-1]
                 partdict["MppData"]=mpppartdat
+                partdict["Group"]="Default group"
                 DATAMPP.append(partdict)
         
         
-            elif filetype==4: #FV files
+            if filetype==4: #FV files
                 partdict = {}
                 partdict["MeasComment"]="-"
                 for item in range(len(filerawdata)):
@@ -1895,7 +1896,8 @@ class IVApp(Toplevel):
                 partdict["FVData"]=fvpartdat
                 DATAFV.append(partdict)
                 
-            elif filetype==5: #3sun files
+                
+            if filetype==5: # 3sun files
                 partdict = {}
                 partdict["filepath"]=file_path[i]
                 partdict["MeasComment"]="-"
@@ -1905,23 +1907,21 @@ class IVApp(Toplevel):
                         break
                 for item in range(len(filerawdata)):
                     if "Cell number:" in filerawdata[item]:
-                        partdict["CellNumber"]=float(filerawdata[item][23:-1])
-                        if partdict["CellNumber"]==1:
-                            partdict["Cellletter"]='A'
-                        elif partdict["CellNumber"]==2:
-                            partdict["Cellletter"]='B'
-                        elif partdict["CellNumber"]==3:
-                            partdict["Cellletter"]='C'
-                        else:
-                            partdict["Cellletter"]='Single'
+                        partdict["Cellletter"]=filerawdata[item][17:-1]
+                        if partdict["Cellletter"]=='A':
+                            partdict["CellNumber"]=1
+                        elif partdict["Cellletter"]=='B':
+                            partdict["CellNumber"]=2
+                        elif partdict["Cellletter"]=='C':
+                            partdict["CellNumber"]=3
                         break
                 for item in range(len(filerawdata)):
-                    if "Deposition ID:" in filerawdata[item]:
-                        if filerawdata[item-1][19:-1]=='':
-                            partdict["SampleName"]=filerawdata[item][15:-1]+"_"+partdict["Cellletter"]
+                    if "Batch:" in filerawdata[item]:
+                        if filerawdata[item+1][17:-1]=='':
+                            partdict["SampleName"]=filerawdata[item][17:-1]+"_"+partdict["Cellletter"]
                         else:
-                            partdict["SampleName"]=filerawdata[item][15:-1]+"_"+filerawdata[item-1][19:-1]+"_"+partdict["Cellletter"]
-                        partdict["DepID"]=filerawdata[item][15:-1]
+                            partdict["SampleName"]=filerawdata[item][17:-1]+"_"+filerawdata[item+1][17:-1]+"_"+partdict["Cellletter"]
+                        partdict["DepID"]=filerawdata[item][17:-1]
                         partdict["DepID"]=partdict["DepID"].replace("-","_")
                         partdict["SampleName"]=partdict["SampleName"].replace("-","_")
                         break
@@ -1976,71 +1976,58 @@ class IVApp(Toplevel):
                         partdict["NbPoints"]=float(filerawdata[item][17:-1])
                         break
                 for item in range(len(filerawdata)):
-                    if "delay_iv (ms):" in filerawdata[item]:
-                        partdict["Delay"]=float(filerawdata[item][15:-1])
+                    if "Delay [s]:" in filerawdata[item]:
+                        partdict["Delay"]=float(filerawdata[item][11:-1])
                         break
                 for item in range(len(filerawdata)):
-                    if "Integration time [s]:" in filerawdata[item]:
-                        partdict["IntegTime"]=float(filerawdata[item][21:-1])
+                    if "Integration time 3sun:" in filerawdata[item]:
+                        partdict["IntegTime"]=filerawdata[item][23:-1]
                         break
                 for item in range(len(filerawdata)):
-                    if "Vstart" in filerawdata[item]:
-                        partdict["Vstart"]=float(filerawdata[item][15:-1])
+                    if "Vstart:" in filerawdata[item]:
+                        partdict["Vstart"]=float(filerawdata[item][7:-1])
                         break
                 for item in range(len(filerawdata)):
-                    if "Vstop" in filerawdata[item]:
-                        partdict["Vend"]=float(filerawdata[item][14:-1])
+                    if "Vstop:" in filerawdata[item]:
+                        partdict["Vend"]=float(filerawdata[item][7:-1])
                         break
                 for item in range(len(filerawdata)):
                     if "Illumination:" in filerawdata[item]:
                         partdict["Illumination"]=filerawdata[item][14:-1]
                         break
-#                for item in range(len(filerawdata)):
-#                    if "reverse/forward?" in filerawdata[item]:
-#                        partdict["ScanDirection"]=filerawdata[item][21:-1]
-#                        break
-#                if partdict["ScanDirection"] =="":
-#                    print(partdict["filepath"])
-#                    print(partdict["Vstart"])
-#                print(partdict["filepath"])
-#                except:
-#                    print(partdict["filepath"])
-                if abs(float(partdict["Vstart"]))>abs(float(partdict["Vend"])):
-                    partdict["ScanDirection"]="Reverse"
-                else:
-                    partdict["ScanDirection"]="Forward"
-#                for item in range(len(filerawdata)):
-#                    if "Imax compliance [A]:" in filerawdata[item]:
-                partdict["ImaxComp"]=999
-#                        break
-#                for item in range(len(filerawdata)):
-#                    if "I sense range:" in filerawdata[item]:
-                partdict["Isenserange"]=999
-#                        break
+                for item in range(len(filerawdata)):
+                    if "reverse/forward?" in filerawdata[item]:
+                        partdict["ScanDirection"]=filerawdata[item][21:-1]
+                        break
+                for item in range(len(filerawdata)):
+                    if "Imax compliance [A]:" in filerawdata[item]:
+                        partdict["ImaxComp"]=filerawdata[item][21:-1]
+                        break
+                for item in range(len(filerawdata)):
+                    if "I sense range:" in filerawdata[item]:
+                        partdict["Isenserange"]=filerawdata[item][15:-1]
+                        break
                 for item in range(len(filerawdata)):
                     if "User name:" in filerawdata[item]:
                         partdict["Operator"]=filerawdata[item][11:-1]
                         break
                 for item in range(len(filerawdata)):
-                    if "MEASURED IV DATA" in filerawdata[item]:
-                            pos=item+2
-                            break
-                    elif "MEASURED IV FRLOOP DATA" in filerawdata[item]:
+                    if "MEASURED 3SUN IV DATA" in filerawdata[item]:
                             pos=item+2
                             break
                 ivpartdat = [[],[]]#[voltage,current]
                 for item in range(pos,len(filerawdata),1):
                     ivpartdat[0].append(float(filerawdata[item].split("\t")[2]))
                     ivpartdat[1].append(0.1*float(filerawdata[item].split("\t")[3][:-1]))
-                partdict["IVData"]=ivpartdat
                 
+                partdict["IVData"]=ivpartdat
                 partdict["Group"]="Default group"
-                partdict["Setup"]="TFIV"              
+                partdict["Setup"]="3sun"
                 partdict["RefNomCurr"]=999
                 partdict["RefMeasCurr"]=999
                 partdict["AirTemp"]=999
                 partdict["ChuckTemp"]=999
-    
+                
                 #still missing: test for transposition, mirror
                 try:
                     if partdict["Illumination"]=="Light" and max(ivpartdat[0])>0.001*float(partdict["Voc"]):
@@ -2055,8 +2042,84 @@ class IVApp(Toplevel):
                 if partdict["Illumination"]=="Light":
                     DATA.append(partdict)
                 else:
-                    DATAdark.append(partdict)
-                
+                    DATAdark.append(partdict)    
+            
+            
+            if filetype==6: # 3sun MPP files
+                partdict = {}
+                partdict["filepath"]=file_path[i]
+                partdict["MeasComment"]="-"
+                for item in range(len(filerawdata)):
+                    if "Measurement comment:" in filerawdata[item]:
+                        partdict["MeasComment"]=filerawdata[item][21:-1]
+                        break
+                for item in range(len(filerawdata)):
+                    if "Cell number:" in filerawdata[item]:
+                        partdict["Cellletter"]=filerawdata[item][17:-1]
+                        if partdict["Cellletter"]=='A':
+                            partdict["CellNumber"]=1
+                        elif partdict["Cellletter"]=='B':
+                            partdict["CellNumber"]=2
+                        elif partdict["Cellletter"]=='C':
+                            partdict["CellNumber"]=3
+                        break
+                for item in range(len(filerawdata)):
+                    if "Batch:" in filerawdata[item]:
+                        if filerawdata[item+1][17:-1]=='':
+                            partdict["SampleName"]=filerawdata[item][17:-1]+"_"+partdict["Cellletter"]
+                        else:
+                            partdict["SampleName"]=filerawdata[item][17:-1]+"_"+filerawdata[item+1][17:-1]+"_"+partdict["Cellletter"]
+                        partdict["DepID"]=filerawdata[item][17:-1]
+                        partdict["DepID"]=partdict["DepID"].replace("-","_")
+                        partdict["SampleName"]=partdict["SampleName"].replace("-","_")
+                        break
+                for item in range(len(filerawdata)):
+                    if "MPP measurement time:" in filerawdata[item]:
+                        partdict["MeasDayTime"]=filerawdata[item][23:-1]
+                        break
+                for item in range(len(filerawdata)):
+                    if "Cell size [m2]:" in filerawdata[item]:
+                        partdict["CellSurface"]=filerawdata[item][17:-1]
+                        break
+                for item in range(len(filerawdata)):
+                    if "delay_mpp (s):" in filerawdata[item]:
+                        partdict["Delay"]=float(filerawdata[item][15:-1])
+                        break
+                for item in range(len(filerawdata)):
+                    if "vstep_mpp (V):" in filerawdata[item]:
+                        partdict["Vstep"]=str(float(filerawdata[item][15:-1]))
+                        break
+                for item in range(len(filerawdata)):
+                    if "vstart_mpp (V):" in filerawdata[item]:
+                        partdict["Vstart"]=str(float(filerawdata[item][16:-1]))
+                        break
+                for item in range(len(filerawdata)):
+                    if "duration_mpp (s):" in filerawdata[item]:
+                        partdict["ExecTime"]=float(filerawdata[item][18:-1])
+                        break
+                for item in range(len(filerawdata)):
+                    if "User name:" in filerawdata[item]:
+                        partdict["Operator"]=filerawdata[item][11:-1]
+                        break
+                for item in range(len(filerawdata)):
+                    if "MEASURED 3SUN MPP DATA" in filerawdata[item]:
+                        pos=item+2
+                        break
+                mpppartdat = [[],[],[],[],[]]#[voltage,current,time,power,vstep]
+                for item in range(pos,len(filerawdata),1):
+                    mpppartdat[0].append(float(filerawdata[item].split("\t")[0]))
+                    mpppartdat[1].append(float(filerawdata[item].split("\t")[1]))
+                    mpppartdat[2].append(float(filerawdata[item].split("\t")[2]))
+                    mpppartdat[3].append(float(filerawdata[item].split("\t")[3]))
+                    mpppartdat[4].append(float(filerawdata[item].split("\t")[4]))
+                partdict["PowerEnd"]=mpppartdat[3][-1]
+                partdict["PowerAvg"]=sum(mpppartdat[3])/float(len(mpppartdat[3]))
+                partdict["trackingduration"]=mpppartdat[2][-1]
+                partdict["MppData"]=mpppartdat
+                partdict["Group"]="Default group"
+                DATAMPP.append(partdict)
+            
+            
             #self.bytes += self.bytestep
             #self.progress["value"] = self.bytes
         #change name of samples to have all different
